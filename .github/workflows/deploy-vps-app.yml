@@ -1,0 +1,131 @@
+name: Deploy VPS App
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy, for example sha-<full-git-sha>. Defaults to current workflow SHA."
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-vps-app
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  packages: read
+
+jobs:
+  deploy-app:
+    name: Deploy web, api, and worker on VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VPS_RUNTIME_DIR: ${{ vars.VPS_RUNTIME_DIR }}
+      REPOSITORY: ${{ github.repository }}
+      IMAGE_TAG_INPUT: ${{ inputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require explicit deployment target
+        run: |
+          : "${VPS_RUNTIME_DIR:?Configure VPS_RUNTIME_DIR for this repository before deployment}"
+          echo "IMAGE_REGISTRY=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Resolve image tag
+        run: |
+          if [ -n "$IMAGE_TAG_INPUT" ]; then
+            echo "IMAGE_TAG=$IMAGE_TAG_INPUT" >> "$GITHUB_ENV"
+          else
+            echo "IMAGE_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Require successful release gates for target SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          case "$IMAGE_TAG" in
+            sha-????????????????????????????????????????)
+              TARGET_SHA="${IMAGE_TAG#sha-}"
+              ;;
+            *)
+              echo "IMAGE_TAG must use the full sha-<40-char-git-sha> form, got: $IMAGE_TAG" >&2
+              exit 1
+              ;;
+          esac
+
+          for workflow in ci.yml frontend-ci.yml dependency-security.yml app-images.yml; do
+            count="$(gh run list \
+              --workflow "$workflow" \
+              --commit "$TARGET_SHA" \
+              --status success \
+              --json databaseId \
+              --limit 1 \
+              | jq 'length')"
+            if [ "$count" -eq 0 ]; then
+              echo "Required workflow $workflow has no successful run for $TARGET_SHA" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload compose file
+        run: |
+          ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p \"$VPS_RUNTIME_DIR\""
+          scp -i ~/.ssh/vps_key ops/vps/docker-compose.app.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$VPS_RUNTIME_DIR/docker-compose.app.yml"
+          scp -i ~/.ssh/vps_key scripts/operations/deploy-ghcr-images.sh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$VPS_RUNTIME_DIR/deploy-ghcr-images.sh"
+          ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "chmod 700 \"$VPS_RUNTIME_DIR/deploy-ghcr-images.sh\""
+
+      - name: Verify GHCR image manifests
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_READ_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          : "${GHCR_USERNAME:?set GHCR_READ_USERNAME secret}"
+          : "${GHCR_TOKEN:?set GHCR_READ_TOKEN secret}"
+          printf '%s\n' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
+          for service in api worker web; do
+            docker manifest inspect "$IMAGE_REGISTRY/$service:$IMAGE_TAG" >/dev/null
+          done
+
+      - name: Pull GHCR images and restart app stack
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_READ_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          : "${GHCR_USERNAME:?set GHCR_READ_USERNAME secret}"
+          : "${GHCR_TOKEN:?set GHCR_READ_TOKEN secret}"
+          printf '%s\n' "$GHCR_TOKEN" | ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd \"$VPS_RUNTIME_DIR\" && GHCR_USERNAME='$GHCR_USERNAME' IMAGE_REGISTRY='$IMAGE_REGISTRY' IMAGE_TAG='$IMAGE_TAG' ./deploy-ghcr-images.sh"
+
+      - name: Smoke app endpoints
+        run: |
+          ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "
+            set -eu
+            curl -fsS http://127.0.0.1:4400/api/health
+            curl -fsS -I http://127.0.0.1:3004/login?returnTo=%2Fprojects
+            for path in \
+              '/api/accounts?limit=1&principal=founder' \
+              '/api/projects?limit=1&principal=founder' \
+              '/api/tasks?limit=1&principal=founder' \
+              '/api/capacity/summary?principal=founder' \
+              '/api/analytics/workforce-projects/summary?from=2026-07-01&to=2026-07-08&timezone=Asia%2FHo_Chi_Minh&grain=day&principal=founder' \
+              '/api/project-controls/pl-summary?principal=finance-admin'; do
+              status=\$(curl -sS -o /tmp/b2b-crm-no-cookie-body -w '%{http_code}' \"http://127.0.0.1:3004\$path\")
+              test \"\$status\" = '401'
+              grep -q 'Bearer session is required' /tmp/b2b-crm-no-cookie-body
+            done
+            api_status=\$(curl -sS -o /tmp/b2b-crm-api-no-cookie-body -w '%{http_code}' 'http://127.0.0.1:4400/api/accounts?limit=1&principal=founder')
+            test \"\$api_status\" = '401'
+          "

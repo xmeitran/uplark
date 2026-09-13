@@ -1,0 +1,49 @@
+name: Deploy VPS Database
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps-db
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-db:
+    name: Deploy PostgreSQL and Redis on VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VPS_RUNTIME_DIR: ${{ vars.VPS_RUNTIME_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require explicit deployment target
+        run: |
+          : "${VPS_RUNTIME_DIR:?Configure VPS_RUNTIME_DIR for this repository before deployment}"
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload compose file
+        run: |
+          ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p \"$VPS_RUNTIME_DIR\""
+          scp -i ~/.ssh/vps_key ops/vps/docker-compose.db.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$VPS_RUNTIME_DIR/docker-compose.db.yml"
+
+      - name: Restart database stack
+        run: |
+          ssh -i ~/.ssh/vps_key "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "
+            set -eu
+            cd \"$VPS_RUNTIME_DIR\"
+            test -f .env
+            docker compose --env-file .env -f docker-compose.db.yml -p b2b-crm-saas-db up -d
+            docker compose --env-file .env -f docker-compose.db.yml -p b2b-crm-saas-db ps
+          "

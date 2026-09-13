@@ -1,0 +1,126 @@
+name: Product CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: product-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: DB, API, frontend, and build gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: b2b_crm_saas_ci
+          POSTGRES_USER: b2b_crm_saas
+          POSTGRES_PASSWORD: b2b_crm_saas_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U b2b_crm_saas -d b2b_crm_saas_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://b2b_crm_saas:b2b_crm_saas_ci@127.0.0.1:5432/b2b_crm_saas_ci?schema=public
+      REDIS_URL: redis://127.0.0.1:6379/0
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:4000/api
+      CRM_API_INTERNAL_URL: http://127.0.0.1:4000
+      APP_PUBLIC_ORIGIN: https://lark-upbase.mindtheoperation.com
+      FOUNDATION_TENANT_KEY: prod
+      FOUNDATION_ADMIN_EMAIL: founder@lark-upbase.mindtheoperation.com
+      FOUNDATION_ADMIN_NAME: Founder GM
+      FOUNDATION_PRODUCTION_STRICT: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Dependency security audit
+        run: pnpm audit:security
+
+      - name: Dependency security and Prisma compatibility regressions
+        run: pnpm test:dependency-security
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply database migrations
+        run: pnpm db:migrate
+
+      - name: Verify critical tables
+        run: pnpm db:verify-critical-tables
+
+      - name: Seed production foundation
+        run: pnpm db:seed:foundation
+
+      - name: Verify production foundation seed
+        run: pnpm db:verify-foundation
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Operation policy and directory sync tests
+        run: |
+          pnpm test:project-assignment-membership
+          node --test scripts/operations/lark-cds-sync.test.mjs
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Build
+        run: pnpm build
+
+      - name: Authenticated BFF smoke
+        env:
+          CRM_E2E_START_API: "1"
+          CRM_E2E_USE_DEMO_SESSION: "1"
+          CRM_PUBLIC_AUTH_SMOKE_REQUIRED: "1"
+          CRM_PUBLIC_SESSION_REQUIRED: "1"
+          CRM_DEMO_AUTH_ENABLED: "true"
+          CRM_ENABLE_DEMO_SESSION: "true"
+          PLAYWRIGHT_PORT: "3903"
+          CRM_E2E_API_PORT: "4000"
+        run: pnpm test:e2e:public-auth:local-demo

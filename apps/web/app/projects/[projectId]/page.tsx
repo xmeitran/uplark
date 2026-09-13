@@ -6992,6 +6992,10 @@ export default function ProjectDetailPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
   const [memberFilter, setMemberFilter] = useState<string>("All");
   const [milestoneFilter, setMilestoneFilter] = useState<string>("All");
+  const [sheetSearch, setSheetSearch] = useState("");
+  const [sheetStatus, setSheetStatus] = useState("All");
+  const [sheetOwner, setSheetOwner] = useState("All");
+  const [selectedSheetTask, setSelectedSheetTask] = useState<string | null>(null);
   const [hoursMilestoneFilter, setHoursMilestoneFilter] =
     useState<string>("All");
   const [hoursStageFilter, setHoursStageFilter] = useState<string>("All");
@@ -8547,6 +8551,16 @@ export default function ProjectDetailPage() {
   ];
   const readinessReady = readinessChecks.filter((item) => item.ready).length;
 
+  const sheetRows = allTasks.filter((task) => {
+    const query = sheetSearch.trim().toLowerCase();
+    if (query && ![task.title, task.assignee, task.stageName].some((value) => value?.toLowerCase().includes(query))) return false;
+    if (sheetStatus !== "All" && task.status !== sheetStatus) return false;
+    if (sheetOwner !== "All" && task.assignee !== sheetOwner) return false;
+    return true;
+  });
+  const selectedSheetTaskData = selectedSheetTask ? allTasks.find((task) => task.id === selectedSheetTask) : null;
+  const sheetOwners = Array.from(new Set(allTasks.map((task) => task.assignee).filter(Boolean)));
+
   // Filtered tasks for performance calculations
   const filteredTasks = allTasks.filter((task) => {
     // 1. Priority filter
@@ -9171,9 +9185,36 @@ export default function ProjectDetailPage() {
             aria-labelledby={`project-tab-${tab.toLowerCase()}`}
             className="px-4 py-7 sm:px-6"
           >
-            {/* ─── OVERVIEW ─── */}
             {tab === "Project Sheet" && (
-              <div className="space-y-6 rounded-2xl bg-slate-50/60 p-1">
+              <>
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"><FileText className="h-4 w-4" /> Project Sheet</div>
+                      <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Project control center</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">Một màn hình để đối soát phạm vi, kế hoạch, nguồn lực và giờ thực tế của project.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => handleTabChange("Tasks")} className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-semibold hover:border-primary/50"><ListChecks className="h-4 w-4" /> Mở Tasks</button>
+                      <button type="button" onClick={() => handleTabChange("Team")} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"><Users className="h-4 w-4" /> Xem thành viên</button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                    {[{label:"Tiến độ",value:`${project.progress}%`,icon:TrendingUp,color:C.success},{label:"Task hoàn tất",value:`${doneTasks}/${allTasks.length}`,icon:ListChecks,color:C.blue},{label:"Plan hour",value:`${projectPlanHours.toFixed(1)}h`,icon:Calendar,color:C.blue},{label:"Actual hour",value:`${projectActualHours.toFixed(1)}h`,icon:Clock,color:C.purple},{label:"Variance",value:`${(projectActualHours-projectPlanHours).toFixed(1)}h`,icon:BarChart2,color:projectActualHours>projectPlanHours?C.danger:C.success},{label:"Cảnh báo",value:`${riskRegistry.length}`,icon:AlertCircle,color:riskRegistry.length?C.warning:C.success}].map((item) => <div key={item.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{item.label}</span><span className="rounded-lg p-2" style={{backgroundColor:`${item.color}16`}}><item.icon className="h-4 w-4" style={{color:item.color}} /></span></div><div className="mt-3 text-2xl font-extrabold tracking-tight">{item.value}</div></div>)}
+                  </div>
+
+                  {riskRegistry.length > 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><div className="flex items-center gap-2 text-sm font-bold text-amber-900"><AlertCircle className="h-4 w-4" /> Cần chú ý trong Project</div><div className="mt-3 grid gap-2 md:grid-cols-2">{riskRegistry.slice(0,4).map((risk) => <div key={risk.id} className="rounded-xl bg-white/70 px-3 py-2 text-sm text-amber-900"><span className="font-semibold">{risk.category}</span><span className="mx-2 text-amber-500">·</span>{risk.description}</div>)}</div></div>}
+
+                  <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"><div><h3 className="text-lg font-bold">Work breakdown &amp; delivery health</h3><p className="mt-1 text-sm text-muted-foreground">Theo dõi từ Milestone → Stage → Task, luôn truy được về người thực hiện và Time Log.</p></div><div className="flex flex-wrap gap-2"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input value={sheetSearch} onChange={(event) => setSheetSearch(event.target.value)} placeholder="Tìm task, người thực hiện..." className="h-10 w-64 rounded-xl border border-border bg-background pl-9 pr-3 text-sm outline-none focus:border-primary" /></div><select value={sheetStatus} onChange={(event) => setSheetStatus(event.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm"><option value="All">Tất cả trạng thái</option><option value="done">Hoàn tất</option><option value="in-progress">Đang thực hiện</option><option value="todo">Chưa bắt đầu</option></select><select value={sheetOwner} onChange={(event) => setSheetOwner(event.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm"><option value="All">Tất cả người thực hiện</option>{sheetOwners.map((owner) => <option key={owner} value={owner}>{owner}</option>)}</select></div></div>
+                    <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[880px] text-left text-sm"><thead><tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground"><th className="pb-3 pr-4">Work item</th><th className="pb-3 pr-4">Người thực hiện</th><th className="pb-3 pr-4">Trạng thái</th><th className="pb-3 pr-4 text-right">Plan</th><th className="pb-3 pr-4 text-right">Actual</th><th className="pb-3 text-right">Variance</th></tr></thead><tbody>{sheetRows.map((task) => { const status = TASK_STATUS[task.status]; const variance = (task.actualHours ?? 0) - (task.plannedHours ?? 0); return <tr key={task.id} className={`cursor-pointer border-b border-border/70 transition hover:bg-muted/40 ${selectedSheetTask === task.id ? "bg-primary/[0.04]" : ""}`} onClick={() => setSelectedSheetTask(selectedSheetTask === task.id ? null : task.id)}><td className="py-3 pr-4"><div className="font-semibold text-foreground">{task.title}</div><div className="mt-1 text-xs text-muted-foreground">{task.stageName} · {task.due || "Chưa có deadline"}</div></td><td className="py-3 pr-4"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{backgroundColor:project.color}}>{task.assignee.slice(0,2).toUpperCase()}</span>{task.assignee}</div></td><td className="py-3 pr-4"><span className="rounded-full px-2.5 py-1 text-xs font-semibold" style={{backgroundColor:status.bg,color:status.color}}>{status.label}</span></td><td className="py-3 pr-4 text-right font-mono tabular-nums">{(task.plannedHours ?? 0).toFixed(1)}h</td><td className="py-3 pr-4 text-right font-mono tabular-nums">{(task.actualHours ?? 0).toFixed(1)}h</td><td className={`py-3 text-right font-mono tabular-nums ${variance > 0 ? "text-red-600" : "text-emerald-600"}`}>{variance > 0 ? "+" : ""}{variance.toFixed(1)}h</td></tr> })}</tbody></table>{sheetRows.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">Không có Task phù hợp với bộ lọc.</div>}</div>
+                    {selectedSheetTaskData && <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wide text-primary">Task detail</p><h4 className="mt-1 text-base font-bold">{selectedSheetTaskData.title}</h4><p className="mt-1 text-sm text-muted-foreground">{selectedSheetTaskData.stageName} · {selectedSheetTaskData.assignee} · Deadline {selectedSheetTaskData.due || "chưa xác định"}</p></div><button type="button" onClick={() => setSelectedSheetTask(null)} className="rounded-lg p-1 hover:bg-muted"><X className="h-4 w-4" /></button></div><div className="mt-4 grid gap-3 sm:grid-cols-4"><div><span className="text-xs text-muted-foreground">Estimate</span><strong className="mt-1 block font-mono">{(selectedSheetTaskData.plannedHours ?? 0).toFixed(1)}h</strong></div><div><span className="text-xs text-muted-foreground">Actual</span><strong className="mt-1 block font-mono">{(selectedSheetTaskData.actualHours ?? 0).toFixed(1)}h</strong></div><div><span className="text-xs text-muted-foreground">Time Log</span><strong className="mt-1 block font-mono">{selectedSheetTaskData.timeEntries?.length ?? 0} bản ghi</strong></div><div><span className="text-xs text-muted-foreground">Task Type</span><strong className="mt-1 block">{selectedSheetTaskData.priority === "high" || selectedSheetTaskData.priority === "critical" ? "Ưu tiên cao" : "Tiêu chuẩn"}</strong></div></div><button type="button" onClick={() => taskDetailRouter.push(`/tasks/${selectedSheetTaskData.id}`)} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">Mở Task và Time Log nguồn <ChevronRight className="h-4 w-4" /></button></div>}
+                  </div>
+
+                  <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]"><section className="rounded-2xl border border-border bg-card p-5 shadow-sm"><div className="flex items-center justify-between"><div><h3 className="text-lg font-bold">Nguồn lực đang tham gia</h3><p className="mt-1 text-sm text-muted-foreground">Active được xác định từ Time Log trong kỳ theo dõi.</p></div><button type="button" onClick={() => handleTabChange("Team")} className="text-sm font-semibold text-primary">Xem đầy đủ →</button></div><div className="mt-4 space-y-3">{teamMembers.slice(0,6).map((member) => <div key={member.id} className="flex items-center gap-3 rounded-xl border border-border/70 p-3"><TeamMemberAvatar member={member} size="md" /><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{member.name}</div><div className="truncate text-xs text-muted-foreground">{member.role}{member.department ? ` · ${member.department}` : ""}</div></div><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{member.status === "active" ? "Active" : "On Hold"}</span><div className="text-right"><div className="font-mono text-sm font-semibold">{member.done}/{member.tasks}</div><div className="text-[11px] text-muted-foreground">task</div></div></div>)}</div></section><section className="rounded-2xl border border-border bg-card p-5 shadow-sm"><h3 className="text-lg font-bold">Project master data</h3><dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 text-sm"><div><dt className="text-xs text-muted-foreground">Client</dt><dd className="mt-1 font-semibold">{project.client}</dd></div><div><dt className="text-xs text-muted-foreground">Project PIC</dt><dd className="mt-1 font-semibold">{teamMembers[0]?.name || "Chưa gán"}</dd></div><div><dt className="text-xs text-muted-foreground">Trạng thái</dt><dd className="mt-1 font-semibold">{project.status}</dd></div><div><dt className="text-xs text-muted-foreground">Kỳ project</dt><dd className="mt-1 font-semibold">{project.startDate} → {project.dueDate}</dd></div><div><dt className="text-xs text-muted-foreground">Loại dịch vụ</dt><dd className="mt-1 font-semibold">{project.category}</dd></div><div><dt className="text-xs text-muted-foreground">Data readiness</dt><dd className="mt-1 font-semibold">{readinessReady}/{readinessChecks.length} trường kiểm tra đạt</dd></div></dl></section></div>
+                </div>
+                <div className="hidden">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
@@ -9406,6 +9447,7 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
               </div>
+              </>
             )}
             {/* ─── OVERVIEW ─── */}
             {tab === "Overview" && (

@@ -10,7 +10,9 @@ export async function GET() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(CRM_SESSION_COOKIE_NAME)?.value;
 
-  if (process.env.NODE_ENV !== "production" && process.env.CRM_LOCAL_DEMO_BYPASS === "true" && (!sessionToken || sessionToken === "local-founder-dev-session")) {
+  const publicDemoMode = process.env.CRM_PUBLIC_DEMO_MODE === "true";
+  const localDemoMode = process.env.NODE_ENV !== "production" && process.env.CRM_LOCAL_DEMO_BYPASS === "true";
+  if ((publicDemoMode || localDemoMode) && (!sessionToken || sessionToken === "local-founder-dev-session")) {
     return NextResponse.json({
       subjectId: "usr-kha-founder",
       displayName: "Founder (Local Pilot)",

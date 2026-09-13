@@ -9,7 +9,13 @@ export function middleware(request: NextRequest) {
   }
 
   const localDemoBypass = process.env.NODE_ENV !== "production" && process.env.CRM_LOCAL_DEMO_BYPASS === "true";
-  const isAuthenticated = Boolean(request.cookies.get("lcrm_session")?.value) || localDemoBypass;
+  // Explicitly opt-in public demo mode for the hosted pilot. This creates a
+  // short-lived synthetic founder session so reviewers can open deep links
+  // without registering an account; production deployments remain protected
+  // unless this flag is deliberately enabled.
+  const publicDemoMode = process.env.CRM_PUBLIC_DEMO_MODE === "true";
+  const hasSession = Boolean(request.cookies.get("lcrm_session")?.value);
+  const isAuthenticated = hasSession || localDemoBypass || publicDemoMode;
   
   const isAuthRoute = request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup";
   if (isAuthRoute) {
@@ -43,11 +49,11 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
-  if (localDemoBypass && !request.cookies.get("lcrm_session")?.value) {
+  if ((localDemoBypass || publicDemoMode) && !hasSession) {
     response.cookies.set("lcrm_session", "local-founder-dev-session", {
       httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: request.nextUrl.protocol === "https:",
       maxAge: 60 * 60 * 8,
       path: "/"
     });

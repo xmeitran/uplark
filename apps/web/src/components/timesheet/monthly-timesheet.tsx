@@ -8,6 +8,7 @@ import {
   buildMonthlyKpis,
   buildPersonMonthSummaries,
   buildPersonProjectRows,
+  buildProjectMemberRows,
   buildWorkGroupSplit,
   sum,
   type TimesheetFilters
@@ -24,10 +25,12 @@ import {
 } from "./timesheet-format";
 import {
   NODE_STATUS_LABELS,
+  PARTICIPATION_STATUS_LABELS,
   PROJECT_STATUS_LABELS,
   WORK_GROUP_LABELS,
   type NodeStatus,
   type ProjectStatus,
+  type ParticipationStatus,
   type TimeLog,
   type TimesheetDataset
 } from "./timesheet-types";
@@ -80,6 +83,23 @@ export function MonthlyTimesheet({
   const kpis = useMemo(() => buildMonthlyKpis(dataset, filters, logs, summaries), [dataset, filters, logs, summaries]);
   const dailySeries = useMemo(() => buildDailySeries(dataset, filters, logs, summaries), [dataset, filters, logs, summaries]);
   const workGroupSplit = useMemo(() => buildWorkGroupSplit(logs), [logs]);
+
+  /** EV-035: keep participation status and project codes beside the monthly
+   * person summary so this view answers both "who" and "where" at a glance. */
+  const participationByPerson = useMemo(() => {
+    const byPerson = new Map<string, Array<{ code: string; status: ParticipationStatus }>>();
+    const projects = filters.projectId === "all"
+      ? dataset.projects
+      : dataset.projects.filter((project) => project.id === filters.projectId);
+    for (const project of projects) {
+      for (const row of buildProjectMemberRows(project, dataset, logs)) {
+        const entries = byPerson.get(row.person.id) ?? [];
+        entries.push({ code: project.code, status: row.status });
+        byPerson.set(row.person.id, entries);
+      }
+    }
+    return byPerson;
+  }, [dataset, filters.projectId, logs]);
 
   const projectHours = useMemo(() => {
     const byProject = new Map<string, number>();
@@ -171,15 +191,16 @@ export function MonthlyTimesheet({
           <TableScroll>
             <table className="w-full min-w-[940px] table-fixed border-collapse">
               <colgroup>
-                <col className="w-[25%]" />
+                <col className="w-[23%]" />
                 <col className="w-[10%]" />
                 <col className="w-[9%]" />
                 <col className="w-[13%]" />
                 <col className="w-[9%]" />
                 <col className="w-[9%]" />
-                <col className="w-[7%]" />
+                <col className="w-[13%]" />
                 <col className="w-[10%]" />
                 <col className="w-[8%]" />
+                <col className="w-[7%]" />
               </colgroup>
               <thead className="border-b border-border bg-muted/40">
                 <tr>
@@ -189,7 +210,8 @@ export function MonthlyTimesheet({
                   <Th align="right">Hoàn thành</Th>
                   <Th align="right">Giờ thiếu</Th>
                   <Th align="right">Ngày ghi nhận</Th>
-                  <Th align="right">Dự án</Th>
+                  <Th>Project tham gia</Th>
+                  <Th align="center">Trạng thái</Th>
                   <Th align="center">Đánh giá</Th>
                   <Th align="center">Chi tiết</Th>
                 </tr>
@@ -197,6 +219,12 @@ export function MonthlyTimesheet({
               <tbody>
                 {pagedPeople.items.map((row) => {
                   const expanded = expandedPersonId === row.person.id;
+                  const projectsForPerson = participationByPerson.get(row.person.id) ?? [];
+                  const overallStatus: ParticipationStatus = projectsForPerson.some((item) => item.status === "active")
+                    ? "active"
+                    : projectsForPerson.some((item) => item.status === "on_hold")
+                      ? "on_hold"
+                      : "insufficient";
                   return (
                     <React.Fragment key={row.person.id}>
                       <tr className="border-b border-border transition-colors hover:bg-muted/30">
@@ -229,7 +257,20 @@ export function MonthlyTimesheet({
                         <Td align="right" className="font-mono tabular-nums text-muted-foreground">
                           {row.daysLogged}/{row.workingDays}
                         </Td>
-                        <Td align="right" className="font-mono tabular-nums text-muted-foreground">{row.projectCount}</Td>
+                        <Td>
+                          <div className="flex flex-wrap gap-1">
+                            {projectsForPerson.length > 0 ? projectsForPerson.map((item) => (
+                              <span key={`${row.person.id}-${item.code}`} className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-700">
+                                {item.code}
+                              </span>
+                            )) : <span className="text-muted-foreground">—</span>}
+                          </div>
+                        </Td>
+                        <Td align="center">
+                          <Pill tone={overallStatus === "active" ? "success" : overallStatus === "on_hold" ? "warning" : "neutral"}>
+                            {PARTICIPATION_STATUS_LABELS[overallStatus]}
+                          </Pill>
+                        </Td>
                         <Td align="center">
                           <Pill tone={qualityTone(row.quality)}>
                             {row.quality === "good" ? "Đầy đủ" : row.quality === "warning" ? "Thiếu nhẹ" : "Thiếu nhiều"}
@@ -253,7 +294,7 @@ export function MonthlyTimesheet({
                       </tr>
                       {expanded ? (
                         <tr className="border-b border-border bg-muted/20">
-                          <td colSpan={9} className="p-0">
+                          <td colSpan={10} className="p-0">
                             <PersonProjectDetail
                               dataset={dataset}
                               logs={logs.filter((log) => log.personId === row.person.id)}
@@ -286,6 +327,7 @@ export function MonthlyTimesheet({
                     {totalDaysLogged}/{totalPossibleDays}
                   </Td>
                   <Td align="right" className="font-mono font-bold tabular-nums">{kpis.projectCount}</Td>
+                  <Td align="center" className="text-[11px] font-semibold text-muted-foreground">—</Td>
                   <Td align="center" className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground">
                     {formatPercent(kpis.dayCoveragePercent)}
                   </Td>

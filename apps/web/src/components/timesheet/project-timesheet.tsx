@@ -363,7 +363,7 @@ export function ProjectTimesheet({
           >
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
               <span><strong className="text-emerald-700">Active</strong> = có Time Log thực tế trong kỳ</span>
-              <span><strong className="text-amber-700">On Hold</strong> = Project đang On Hold</span>
+              <span><strong className="text-amber-700">On Hold</strong> = phân công thành viên hoặc Project đang tạm dừng</span>
               <span><strong className="text-slate-600">Thiếu dữ liệu</strong> = chưa đủ căn cứ, không suy ra khả năng nhận việc</span>
             </div>
             <ProjectMemberTable dataset={dataset} projectId={selected.project.id} logs={logs} onOpenLogs={setDrawerRequest} />

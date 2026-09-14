@@ -1420,27 +1420,37 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          {/* Cross-project Project Sheet overview. This is additive; the All Projects result set stays below. */}
-          <section className="order-last mb-4 shrink-0 rounded-xl border border-blue-200/80 bg-card p-4 shadow-sm sm:mb-5 sm:p-5" data-testid="project-sheet-overview">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          {/* Cross-project Project Sheet overview. Additive to the All Projects result set. */}
+          <section className="mb-4 shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-5" data-testid="project-sheet-overview">
+            <div className="flex flex-col gap-4 border-b border-border bg-gradient-to-r from-slate-50 via-card to-blue-50/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">Project Sheet</span>
-                  <h2 className="text-lg font-bold text-foreground">Tổng quan theo project</h2>
+                  <span className="rounded-md bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">PROJECT SHEET</span>
+                  <h2 className="text-lg font-bold text-foreground">Portfolio control center</h2>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">So sánh tiến độ, task, ngân sách và giờ Plan · Logwork · P&amp;L trước khi mở chi tiết từng project.</p>
+                <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Một màn hình tổng quan để so sánh kế hoạch, thực tế và hiệu quả của từng project trước khi mở Project Sheet chi tiết.</p>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">{filtered.length} project theo bộ lọc hiện tại</span>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">{filtered.length} project</span>
+                <button type="button" onClick={() => setView("sheet")} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Mở bảng đối soát</button>
+              </div>
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 divide-x border-b border-border bg-card sm:grid-cols-4">
+              {[
+                { label: "Đang thực hiện", value: active, tone: "text-emerald-600" },
+                { label: "Có rủi ro", value: atRisk, tone: "text-red-600" },
+                { label: "Tổng task", value: filtered.reduce((sum, p) => sum + p.tasks.total, 0).toLocaleString("vi-VN"), tone: "text-foreground" },
+                { label: "Đã hoàn thành", value: filtered.filter((p) => p.progress >= 100).length, tone: "text-violet-600" }
+              ].map((stat) => <div key={stat.label} className="px-4 py-3 sm:px-5"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</p><p className={`mt-1 text-xl font-bold tabular-nums ${stat.tone}`}>{stat.value}</p></div>)}
+            </div>
+            <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
               {filtered.slice(0, 6).map((item) => (
-                <Link key={item.id} href={`/projects/${item.id}?tab=Project%20Sheet`} className="rounded-xl border border-border/80 bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-sm">
-                  <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} /><span className="truncate text-sm font-semibold">{item.name}</span></div><span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{item.status}</span></div>
-                  <div className="mt-1 text-xs text-muted-foreground">{item.client} · {item.category}</div>
-                  <div className="mt-3 flex items-center justify-between text-xs"><span className="text-muted-foreground">Tiến độ</span><span className="font-mono font-semibold">{item.progress}%</span></div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div>
-                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:grid-cols-4"><div><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div><div className="text-muted-foreground">Budget</div><div className="mt-1 truncate font-mono font-semibold"><MoneyAmount value={item.budget} /></div></div><div><div className="text-muted-foreground">Plan hour</div><div className="mt-1 font-mono font-semibold text-blue-700">{Math.max(8, item.tasks.total * 8).toLocaleString('vi-VN')}h</div></div><div><div className="text-muted-foreground">Due</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-[11px]"><span className="text-muted-foreground">Members</span><ProjectMemberAvatarStack members={item.members} limit={4} /></div>
+                <Link key={item.id} href={`/projects/${item.id}?tab=Project%20Sheet`} className="group rounded-xl border border-border/80 bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}18` }}><Layers className="h-4 w-4" style={{ color: item.color }} /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold group-hover:text-primary">{item.name}</span><span className="block truncate text-[11px] text-muted-foreground">{item.client} · {item.category}</span></span></div><span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{item.status}</span></div>
+                  <div className="mt-4 flex items-center justify-between text-xs"><span className="font-medium text-muted-foreground">Tiến độ thực hiện</span><span className="font-mono font-bold">{item.progress}%</span></div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div>
+                  <div className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-muted/40 py-2.5 text-[11px]"><div className="px-2"><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div className="px-2"><div className="text-muted-foreground">Plan hour</div><div className="mt-1 font-mono font-semibold text-blue-700">{Math.max(8, item.tasks.total * 8).toLocaleString('vi-VN')}h</div></div><div className="px-2"><div className="text-muted-foreground">Đến hạn</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
+                  <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 text-[11px]"><span className="text-muted-foreground">{item.members.length} thành viên</span><div className="flex items-center gap-2"><ProjectMemberAvatarStack members={item.members} limit={4} /><ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" /></div></div>
                 </Link>
               ))}
             </div>

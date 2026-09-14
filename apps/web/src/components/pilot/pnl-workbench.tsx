@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/constructor-x/app-shell";
 import { CustomDropdown } from "@/components/constructor-x/custom-controls";
 import {
@@ -184,11 +185,12 @@ function Bar({
   );
 }
 
-export function PnlWorkbench() {
+export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string } = {}) {
+  const router = useRouter();
   const [status, setStatus] = useState("all");
   const [query, setQuery] = useState("");
   const [projectCode, setProjectCode] = useState("all");
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(Boolean(detailProjectCode));
   const [period, setPeriod] = useState("09/2026");
   const [showExpenses, setShowExpenses] = useState(true);
   const matchingProjects = useMemo(
@@ -204,7 +206,8 @@ export function PnlWorkbench() {
   );
   // The project selector is a real report filter: all cards, totals, table
   // rows and the detail panel must use the same filtered collection.
-  const effectiveProjectCode = matchingProjects.some((p) => p.code === projectCode) ? projectCode : "all";
+  const requestedProjectCode = detailProjectCode ?? projectCode;
+  const effectiveProjectCode = matchingProjects.some((p) => p.code === requestedProjectCode) ? requestedProjectCode : "all";
   const projects = useMemo(
     () => matchingProjects.filter((p) => effectiveProjectCode === "all" || p.code === effectiveProjectCode),
     [matchingProjects, effectiveProjectCode],
@@ -246,6 +249,7 @@ export function PnlWorkbench() {
     <AppShell activeRoute="/pnl" title="Project P&L">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-[1480px] space-y-5">
+          {!detailProjectCode ? <>
           <EvTrace ev="EV-007" title="Project P&L" scope="Plan · Logwork · P&L Hour, Worklog Daily, chi phí và đối soát ngoại lệ" />
           <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -386,8 +390,7 @@ export function PnlWorkbench() {
                         key={item.code}
                         onClick={() => {
                           setProjectCode(item.code);
-                          setDetailOpen(true);
-                          window.setTimeout(() => document.getElementById("pnl-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+                          router.push(`/pnl/${item.code}`);
                         }}
                         className={`cursor-pointer hover:bg-blue-50/40 ${item.code === project.code ? "bg-blue-50/60" : ""}`}
                       >
@@ -647,7 +650,8 @@ export function PnlWorkbench() {
               </div>
             ) : null}
           </section>
-          {detailOpen ? (
+          </> : null}
+          {(detailOpen || detailProjectCode) ? (
             <section id="pnl-detail" className="scroll-mt-4 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
                 <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-border bg-card/95 px-5 py-4 backdrop-blur sm:-mx-7 sm:-mt-7 sm:px-7">
                 <div className="flex items-start justify-between">
@@ -660,7 +664,7 @@ export function PnlWorkbench() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setDetailOpen(false)}
+                    onClick={() => router.push("/pnl")}
                     className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
                   >
                     <ChevronRight className="h-3.5 w-3.5 rotate-180" /> Quay lại tổng quan

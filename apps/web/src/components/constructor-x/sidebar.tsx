@@ -39,6 +39,7 @@ import {
 import { fetchLiveProjectById } from "@/app/projects/live-projects";
 import { isLocalNavigationVisibleRoute } from "@/lib/production-route-readiness";
 import { useTheme } from "@/lib/theme";
+import { PROJECTS } from "@/app/projects/data";
 
 export const PROJECT_TAB_NAV_EVENT = "b2b-crm:project-tab-navigation";
 
@@ -114,6 +115,12 @@ function isProjectSubTab(value: string | null): value is ProjectSubTab {
 
 function getSidebarProjectsCacheKey(ownerKey: string) {
   return `${SIDEBAR_PROJECTS_CACHE_PREFIX}:${encodeURIComponent(ownerKey.trim().toLowerCase() || "anonymous")}`;
+}
+
+function isPublicDemoHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "uplark.onrender.com" || host.endsWith(".trycloudflare.com") || host === "demo.merkle.com";
 }
 
 function normalizeSidebarProject(value: unknown): Project | null {
@@ -284,8 +291,19 @@ export function Sidebar({ activeRoute = "/", onCreateProjectClick, variant = "de
     return () => controller.abort();
   }, [pushedIds, pushedIdsHydrated, pushedProjectOwnerKey]);
 
-  const sidebarProjects = sortSidebarProjectsByPinnedIds(localProjects, pushedIds);
-  const shouldShowNoProjects = pushedIdsHydrated && pushedIds.length === 0 && !pinnedProjectsLoading;
+  const demoSidebarProjects = isPublicDemoHost()
+    ? PROJECTS.slice(0, 6).map((project) => ({
+        id: project.id,
+        name: project.name,
+        color: project.color,
+        initials: project.members[0]?.initials || project.name.substring(0, 2).toUpperCase(),
+        taskCount: project.tasks.total
+      }))
+    : [];
+  const sidebarProjects = pushedIds.length > 0
+    ? sortSidebarProjectsByPinnedIds(localProjects, pushedIds)
+    : demoSidebarProjects;
+  const shouldShowNoProjects = pushedIdsHydrated && pushedIds.length === 0 && !pinnedProjectsLoading && sidebarProjects.length === 0;
   const shouldShowPinnedLoading = pushedIdsHydrated && pinnedProjectsLoading && pushedIds.length > 0 && sidebarProjects.length === 0;
   const shouldShowPinnedUnavailable = pushedIdsHydrated && !pinnedProjectsLoading && pushedIds.length > 0 && sidebarProjects.length === 0;
   const isDesktop = variant === "desktop";

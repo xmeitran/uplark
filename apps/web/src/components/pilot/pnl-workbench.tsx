@@ -37,9 +37,9 @@ const PROJECTS: Project[] = [
     client: "Khách hàng A",
     status: "Active",
     plan: 4800,
-    logwork: 3280,
-    pnl: 3120,
-    pending: 160,
+    logwork: 620,
+    pnl: 590,
+    pending: 30,
     revenue: 1680000000,
     expenses: 430000000,
   },
@@ -49,9 +49,9 @@ const PROJECTS: Project[] = [
     client: "Khách hàng B",
     status: "In Review",
     plan: 2240,
-    logwork: 1940,
-    pnl: 1880,
-    pending: 60,
+    logwork: 420,
+    pnl: 390,
+    pending: 30,
     revenue: 920000000,
     expenses: 286000000,
   },
@@ -61,9 +61,9 @@ const PROJECTS: Project[] = [
     client: "Nội bộ",
     status: "On Hold",
     plan: 1200,
-    logwork: 620,
+    logwork: 280,
     pnl: 0,
-    pending: 620,
+    pending: 280,
     revenue: 0,
     expenses: 84000000,
   },
@@ -85,16 +85,19 @@ const LOGWORK_PEOPLE = [
   { name: "Lê Hoàng", role: "Engineering", weight: 0.14 },
   { name: "Nguyễn Linh", role: "QA / UAT", weight: 0.12 },
 ];
-const LOGWORK_DATES = ["01/09/2026", "02/09/2026", "03/09/2026", "04/09/2026"];
+const LOGWORK_DATES = ["01/09/2026", "02/09/2026", "03/09/2026", "04/09/2026", "07/09/2026", "08/09/2026", "09/09/2026", "10/09/2026", "11/09/2026", "14/09/2026", "15/09/2026", "16/09/2026", "17/09/2026", "18/09/2026", "21/09/2026", "22/09/2026", "23/09/2026", "24/09/2026", "25/09/2026", "28/09/2026"];
 
 function buildDailyLogwork(totalHours: number) {
   return LOGWORK_PEOPLE.flatMap((person, personIndex) => {
     const personTotal = totalHours * person.weight;
-    const dailyWeights = [0.2, 0.25, 0.25, 0.3];
+    const dailyWeights = LOGWORK_DATES.map((_, dayIndex) => 0.8 + ((personIndex * 3 + dayIndex) % 5) * 0.1);
+    const weightTotal = dailyWeights.reduce((sum, value) => sum + value, 0);
     return LOGWORK_DATES.map((date, dayIndex) => ({
       ...person,
       date,
-      hours: Number((personTotal * dailyWeights[dayIndex]).toFixed(1)),
+      // The report follows the contract rule of max 8h/person/day. Mock totals
+      // are intentionally bounded so the detail never shows impossible daily hours.
+      hours: Number(Math.min(8, (personTotal * dailyWeights[dayIndex]) / weightTotal).toFixed(1)),
       id: `${person.name}-${date}`,
       color: ["#2563eb", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#0891b2"][personIndex],
     }));
@@ -384,6 +387,7 @@ export function PnlWorkbench() {
                         onClick={() => {
                           setProjectCode(item.code);
                           setDetailOpen(true);
+                          window.setTimeout(() => document.getElementById("pnl-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
                         }}
                         className={`cursor-pointer hover:bg-blue-50/40 ${item.code === project.code ? "bg-blue-50/60" : ""}`}
                       >
@@ -644,7 +648,7 @@ export function PnlWorkbench() {
             ) : null}
           </section>
           {detailOpen ? (
-            <section className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
+            <section id="pnl-detail" className="scroll-mt-4 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
                 <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-border bg-card/95 px-5 py-4 backdrop-blur sm:-mx-7 sm:-mt-7 sm:px-7">
                 <div className="flex items-start justify-between">
                   <div>

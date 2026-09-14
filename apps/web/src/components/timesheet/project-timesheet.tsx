@@ -181,6 +181,8 @@ export function ProjectTimesheet({
         />
       </div>
 
+      {audience === "admin" ? <AdminEstimateActualAlerts summaries={summaries} /> : null}
+
       {/* ── Project overview table ─────────────────────────────────────── */}
       <SectionCard
         id="pts-overview"
@@ -518,6 +520,23 @@ function AdminProgressAlerts({ summary }: { summary: ProjectSummaryRow }) {
   return <SectionCard id="pts-admin-alerts" title="EV-036 · Cảnh báo chậm tiến độ & giờ thực hiện" description="Admin view: truy nguyên từ Estimate, Actual, Deadline và trạng thái Task." actions={<Pill tone={alerts.length ? "warning" : "success"}>{alerts.length ? `${alerts.length} cảnh báo đang hoạt động` : "Không có cảnh báo"}</Pill>}>
     {alerts.length === 0 ? <EmptyState message="Project đang trong ngưỡng theo dữ liệu hiện có." /> : <div className="grid gap-2 md:grid-cols-2">{alerts.map((alert, index) => <div key={`${alert.code}-${alert.label}-${index}`} className={`rounded-lg border px-3 py-2 ${alert.tone === "danger" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"}`}><div className="flex items-center justify-between gap-2"><strong className="text-[12px]">{alert.label}</strong><span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[10px] font-bold text-muted-foreground">{alert.code}</span></div><p className="mt-1 text-[11px] text-muted-foreground">{alert.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">Căn cứ: {alert.basis}</p></div>)}</div>}
     <p className="mt-3 text-[10px] text-muted-foreground">Không kết luận chậm chỉ vì Actual Hour cao; cảnh báo phải có dữ liệu tiến độ đi kèm.</p>
+  </SectionCard>;
+}
+
+function AdminEstimateActualAlerts({ summaries }: { summaries: ProjectSummaryRow[] }) {
+  const alerts = summaries.flatMap((summary) => {
+    const rows: Array<{ project: string; code: string; estimate: string; actual: string; variance: string; label: string; detail: string; tone: "danger" | "warning" | "info" }> = [];
+    if (summary.consumptionPercent > 100) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Vượt Estimate", detail: "Actual Hour đã cao hơn baseline kế hoạch; cần xem task gây vượt.", tone: "danger" });
+    else if (summary.consumptionPercent >= 85) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Sát ngưỡng", detail: "Đã dùng trên 85% Estimate Hour; cần theo dõi phần việc còn lại.", tone: "warning" });
+    if (summary.overdueTaskCount > 0) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Có nguy cơ chậm tiến độ", detail: `${summary.overdueTaskCount} task chưa hoàn thành đã quá Deadline.`, tone: "danger" });
+    if (summary.blockedTaskCount > 0) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Task đang chờ", detail: `${summary.blockedTaskCount} task đang chờ; cần cập nhật blocker và người xử lý.`, tone: "warning" });
+    if (summary.estimateCoveragePercent < 80) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Thiếu Estimate Hour", detail: `Chỉ ${formatPercent(summary.estimateCoveragePercent)} task có Estimate; chưa đủ căn cứ kết luận hiệu suất.`, tone: "info" });
+    if (summary.actualMinutes === 0) rows.push({ project: summary.project.name, code: summary.project.code, estimate: formatHours(summary.estimateMinutes), actual: formatHours(summary.actualMinutes), variance: formatSignedHours(summary.varianceMinutes), label: "Chưa có Actual Hour", detail: "Chưa có Time Log trong kỳ; cần kiểm tra việc ghi nhận hoặc mapping project.", tone: "warning" });
+    return rows;
+  });
+  return <SectionCard id="pts-ev026-alerts" title="EV-026 · Cảnh báo Estimate Hour và Actual Hour" description="Admin view: tổng hợp toàn bộ cảnh báo theo project, có số liệu và nguyên nhân để đối soát." actions={<Pill tone={alerts.length ? "warning" : "success"}>{alerts.length ? `${alerts.length} cảnh báo` : "Không có cảnh báo"}</Pill>}>
+    {alerts.length === 0 ? <EmptyState message="Tất cả project đang trong ngưỡng theo dữ liệu hiện có." /> : <TableScroll><table className="w-full min-w-[900px] table-fixed border-collapse"><colgroup><col className="w-[23%]" /><col className="w-[12%]" /><col className="w-[11%]" /><col className="w-[11%]" /><col className="w-[12%]" /><col className="w-[31%]" /></colgroup><thead className="border-b border-border bg-muted/40"><tr><Th>Project</Th><Th align="right">Estimate</Th><Th align="right">Actual</Th><Th align="right">Chênh lệch</Th><Th>Cảnh báo</Th><Th>Chi tiết cần xử lý</Th></tr></thead><tbody className="divide-y divide-border">{alerts.map((alert, index) => <tr key={`${alert.code}-${alert.label}-${index}`} className="hover:bg-muted/20"><Td><div className="font-semibold">{alert.project}</div><div className="text-[10px] text-muted-foreground">{alert.code}</div></Td><Td align="right" className="font-mono">{alert.estimate}</Td><Td align="right" className="font-mono">{alert.actual}</Td><Td align="right" className={`font-mono font-semibold ${alert.variance.startsWith("+") ? "text-destructive" : "text-muted-foreground"}`}>{alert.variance}</Td><Td><Pill tone={alert.tone}>{alert.label}</Pill></Td><Td className="text-[11px] text-muted-foreground">{alert.detail}</Td></tr>)}</tbody></table></TableScroll>}
+    <p className="mt-3 text-[10px] text-muted-foreground">Quy tắc EV-026: cảnh báo luôn hiển thị cùng Estimate, Actual, chênh lệch và nguyên nhân; không suy luận chậm tiến độ chỉ từ Actual Hour.</p>
   </SectionCard>;
 }
 

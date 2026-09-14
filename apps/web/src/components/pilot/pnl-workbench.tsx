@@ -234,6 +234,10 @@ export function PnlWorkbench() {
     })),
     [dailyLogwork],
   );
+  const dailyTotals = useMemo(
+    () => LOGWORK_DATES.map((date) => ({ date, hours: dailyLogwork.filter((entry) => entry.date === date).reduce((sum, entry) => sum + entry.hours, 0) })),
+    [dailyLogwork],
+  );
   return (
     <AppShell activeRoute="/pnl" title="Project P&L">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -638,35 +642,29 @@ export function PnlWorkbench() {
             ) : null}
           </section>
           {detailOpen ? (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
-              role="dialog"
-              aria-modal="true"
-              onClick={() => setDetailOpen(false)}
-            >
-              <div
-                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-2xl"
-                onClick={(event) => event.stopPropagation()}
-              >
+            <section className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
+                <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-border bg-card/95 px-5 py-4 backdrop-blur sm:-mx-7 sm:-mt-7 sm:px-7">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                      PNL-01 · Chi tiết đối soát P&amp;L
+                      PNL-01 · Project detail
                     </p>
-                    <h2 className="mt-1 text-xl font-bold">{project.name}</h2>
+                    <h2 className="mt-1 text-2xl font-extrabold tracking-tight">{project.name}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">{project.code} · {project.client} · Kỳ báo cáo {period}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setDetailOpen(false)}
-                    className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
                   >
-                    Đóng
+                    <ChevronRight className="h-3.5 w-3.5 rotate-180" /> Quay lại tổng quan
                   </button>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                   <span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-700">Kỳ báo cáo: {period}</span>
                   <span className="rounded-md bg-slate-100 px-2 py-1">Client: {project.client}</span>
                   <Status tone={project.pending ? "warning" : "success"}>{project.pending ? "Tạm tính · còn giờ chờ" : "Đủ điều kiện tính"}</Status>
+                </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                   <KPI
@@ -702,7 +700,16 @@ export function PnlWorkbench() {
                   <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3"><span className="text-[10px] font-semibold uppercase tracking-wide text-violet-700">Tỷ lệ P&amp;L hợp lệ</span><strong className="mt-1 block font-mono text-lg text-violet-900">{Math.round((project.pnl / Math.max(1, project.logwork)) * 100)}%</strong><span className="text-[10px] text-violet-800/70">P&amp;L Hour / Logwork Hour</span></div>
                   <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3"><span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Cần xử lý</span><strong className="mt-1 block font-mono text-lg text-amber-900">{project.pending}h</strong><span className="text-[10px] text-amber-800/70">Thiếu duyệt hoặc Cost Rate hiệu lực</span></div>
                 </div>
-                <section className="mt-5 overflow-hidden rounded-xl border border-border">
+                <section className="rounded-xl border border-border bg-muted/20 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div><h3 className="text-sm font-bold">Tổng quan Logwork theo ngày</h3><p className="mt-1 text-[11px] text-muted-foreground">Tổng giờ của tất cả nhân sự trong từng ngày thuộc kỳ báo cáo.</p></div>
+                    <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-slate-600">{LOGWORK_DATES.length} ngày ghi nhận</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {dailyTotals.map((item) => <div key={item.date} className="rounded-lg border border-border bg-card p-3"><div className="text-[10px] font-semibold text-muted-foreground">{item.date}</div><strong className="mt-1 block font-mono text-lg">{item.hours.toFixed(1)}h</strong><div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (item.hours / Math.max(...dailyTotals.map((day) => day.hours), 1)) * 100)}%` }} /></div></div>)}
+                  </div>
+                </section>
+                <section className="overflow-hidden rounded-xl border border-border">
                   <div className="flex flex-col gap-1 border-b border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="text-sm font-bold">Logwork Daily theo nhân sự</h3>
@@ -720,7 +727,7 @@ export function PnlWorkbench() {
                   </div>
                 </section>
                 {project.pending > 0 ? <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><h3 className="text-sm font-bold text-amber-900">Danh sách chờ xử lý</h3><p className="mt-1 text-xs leading-relaxed text-amber-800">{project.pending}h Logwork chưa được đưa vào P&amp;L Hour. Cần kiểm tra trạng thái duyệt, mapping project và Cost Rate hiệu lực trước khi chốt kỳ.</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra approval</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra Cost Rate</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Ghi audit reason</span></div></div></div></section> : null}
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <section className="rounded-xl border border-border p-4">
                     <h3 className="text-sm font-bold">Đối soát giờ</h3>
                     <dl className="mt-3 space-y-3 text-xs">
@@ -772,7 +779,7 @@ export function PnlWorkbench() {
                     </dl>
                   </section>
                 </div>
-                <section className="mt-4 rounded-xl border border-border p-4">
+                <section className="rounded-xl border border-border p-4">
                   <h3 className="text-sm font-bold">Expenses theo 6 nhóm</h3>
                   <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
                     {EXPENSES.map((label, index) => (
@@ -794,8 +801,7 @@ export function PnlWorkbench() {
                     ))}
                   </div>
                 </section>
-              </div>
-            </div>
+            </section>
           ) : null}
           <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
             <div className="flex items-start gap-2">

@@ -653,7 +653,7 @@ export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string
           </> : null}
           {(detailOpen || detailProjectCode) ? (
             <section id="pnl-detail" className="scroll-mt-4 space-y-5 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
-                <div className="sticky top-0 z-10 -mx-5 -mt-5 border-b border-border bg-card/95 px-5 py-4 backdrop-blur sm:-mx-7 sm:-mt-7 sm:px-7">
+                <div className="relative -mx-5 -mt-5 border-b border-border bg-card px-5 py-4 sm:-mx-7 sm:-mt-7 sm:px-7">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
@@ -728,8 +728,11 @@ export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string
                       </div>
                       <div className="flex items-center gap-2"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-slate-600">{LOGWORK_PEOPLE.length} nhân sự</span><span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">Tổng {project.logwork.toLocaleString("vi-VN")}h</span></div>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {dailyTotals.map((item) => <div key={item.date} className="rounded-lg border border-border bg-card px-3 py-2"><div className="text-[10px] text-muted-foreground">{item.date}</div><div className="mt-1 flex items-end justify-between gap-2"><strong className="font-mono text-base">{item.hours.toFixed(1)}h</strong><span className="text-[10px] text-muted-foreground">{Math.round((item.hours / Math.max(1, project.logwork)) * 100)}%</span></div><div className="mt-1.5 h-1 rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (item.hours / Math.max(...dailyTotals.map((day) => day.hours), 1)) * 100)}%` }} /></div></div>)}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px]">
+                      <span className="rounded-md bg-white px-2 py-1 font-semibold text-slate-600">Bảng chi tiết theo ngày</span>
+                      <span className="rounded-md bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">Tổng {project.logwork.toLocaleString("vi-VN")}h</span>
+                      <span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-700">Tối đa 8h / người / ngày</span>
+                      <span className="text-muted-foreground">Màu xanh: giờ đã ghi nhận · Tổng cuối dòng: tổng giờ của nhân sự</span>
                     </div>
                   </div>
                   <div className="overflow-x-auto">

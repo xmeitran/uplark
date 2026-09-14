@@ -91,6 +91,7 @@ const visibleMoreItems = NAV_MORE.filter((item) => isLocalNavigationVisibleRoute
 const visibleBottomItems = NAV_BOTTOM.filter((item) => item.isToggle || isLocalNavigationVisibleRoute(item.href));
 const PROJECT_SUB = [
   { label: "Dashboard", tab: "Dashboard" },
+  { label: "Project Sheet", tab: "Project Sheet" },
   { label: "Stages", tab: "Timeline" },
   { label: "Tasks", tab: "Tasks" }
 ] as const;

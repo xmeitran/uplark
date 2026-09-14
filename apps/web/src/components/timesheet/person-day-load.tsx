@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { AlertTriangle, FileSearch } from "lucide-react";
+import { AlertTriangle, Download, FileSearch } from "lucide-react";
 import {
   buildPersonDayMatrix,
   logsForPersonDay,
@@ -60,6 +60,28 @@ export function PersonDayLoad({
 
   const overloadedPeople = matrix.rows.filter((row) => row.overloadedDays > 0).length;
 
+  const exportExcel = useCallback(() => {
+    const escape = (value: string | number) => String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
+    const cellStyle = (cell: PersonDayCell) => {
+      if (!cell.isWorkingDay) return "background:#f1f5f9;color:#94a3b8;";
+      if (cell.minutes === 0) return "background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;";
+      if (cell.loadPercent > OVERLOAD_THRESHOLD_PERCENT) return "background:#fca5a5;color:#991b1b;";
+      if (cell.loadPercent >= UNDERLOAD_THRESHOLD_PERCENT) return "background:#bbf7d0;color:#15803d;";
+      return "background:#fef3c7;color:#b45309;";
+    };
+    const headers = ["Nhân sự", "Định mức/ngày", ...matrix.days.map((day) => `${day.date.slice(8, 10)}/${day.date.slice(5, 7)}`), "Tổng kỳ"];
+    const body = matrix.rows.map((row) => `<tr><td><b>${escape(row.person.name)}</b></td><td>${escape(formatHours(row.person.standardMinutesPerDay * row.person.contractRatio))}</td>${row.cells.map((cell) => `<td style="${cellStyle(cell)}">${cell.minutes > 0 ? escape(Math.round(cell.minutes / 6) / 10) : cell.isWorkingDay ? "·" : ""}</td>`).join("")}<td><b>${escape(formatHours(row.totalMinutes))}</b></td></tr>`).join("");
+    const totals = `<tr style="font-weight:bold;background:#f8fafc"><td>Tổng theo ngày</td><td></td>${matrix.dayTotals.map((total) => `<td>${total > 0 ? escape(formatHours(total)) : "—"}</td>`).join("")}<td>${escape(formatHours(matrix.dayTotals.reduce((sum, value) => sum + value, 0)))}</td></tr>`;
+    const html = `<html><head><meta charset="UTF-8"></head><body><h2>Timesheet — Giờ ghi nhận mỗi ngày theo nhân sự</h2><p>Kỳ báo cáo: ${escape(filters.month)} · Xuất từ bộ lọc hiện tại</p><table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse;font-family:Arial;font-size:11px"><thead><tr style="background:#e2e8f0;font-weight:bold">${headers.map((header) => `<th>${escape(header)}</th>`).join("")}</tr></thead><tbody>${body}${totals}</tbody></table><p>Chú thích: ô xanh = đủ ngày chuẩn; ô vàng = dưới ngày chuẩn; ô đỏ = quá tải; ô đỏ nhạt = ngày công chưa ghi nhận; ô xám = cuối tuần/ngày lễ.</p></body></html>`;
+    const blob = new Blob([`\ufeff${html}`], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `timesheet-person-day-${filters.month}.xls`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [filters.month, matrix]);
+
   return (
     <SectionCard
       id="person-day-load"
@@ -70,6 +92,7 @@ export function PersonDayLoad({
           <Pill tone={overloadedPeople === 0 ? "success" : "danger"}>
             {overloadedPeople === 0 ? "Không ai quá tải" : `${overloadedPeople} người có ngày quá tải`}
           </Pill>
+          <button type="button" onClick={exportExcel} disabled={matrix.rows.length === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50" title="Xuất bảng hiện tại sang Excel"><Download className="h-3.5 w-3.5" aria-hidden /> Xuất Excel</button>
         </span>
       }
     >

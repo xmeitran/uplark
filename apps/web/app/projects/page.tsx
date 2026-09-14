@@ -1367,12 +1367,12 @@ export default function ProjectsPage() {
 
   return (
     <AppShell activeRoute="/projects" onCreateProjectClick={() => setIsCreateOpen(true)} title="Projects">
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 xl:p-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-slate-50/70 p-4 sm:p-5 xl:p-7">
           <EvTrace ev="EV-012" title="All Projects / Project View" scope="Tổng hợp project, trạng thái, tiến độ và điều hướng Project Sheet" />
           {/* Page Header */}
           <div className="mb-4 flex shrink-0 flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center">
             <div>
-              <h1 className="text-xl font-bold text-foreground">All Projects</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">All Projects</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {filtered.length} projects · {projectsList.length} loaded · {active} active in view
               </p>
@@ -1421,18 +1421,15 @@ export default function ProjectsPage() {
           </div>
 
           {/* Cross-project Project Sheet overview. Additive to the All Projects result set. */}
-          <section className="mb-4 shrink-0 overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-5" data-testid="project-sheet-overview">
-            <div className="flex flex-col gap-4 border-b border-border bg-gradient-to-r from-slate-50 via-card to-blue-50/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <section className="mb-4 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)] sm:mb-5" data-testid="project-sheet-overview">
+            <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">PROJECT SHEET</span>
-                  <h2 className="text-lg font-bold text-foreground">Portfolio control center</h2>
-                </div>
-                <p className="mt-1 max-w-2xl text-xs text-muted-foreground">Một màn hình tổng quan để so sánh kế hoạch, thực tế và hiệu quả của từng project trước khi mở Project Sheet chi tiết.</p>
+                <h2 className="text-xl font-bold tracking-tight text-foreground">Project Sheet overview</h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Tổng quan nhanh theo project. Chọn một project để mở Project Sheet chi tiết.</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">{filtered.length} project</span>
-                <button type="button" onClick={() => setView("sheet")} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Mở bảng đối soát</button>
+                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">{filtered.length} project</span>
+                <button type="button" onClick={() => setView("sheet")} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Mở bảng đối soát</button>
               </div>
             </div>
             <div className="grid grid-cols-2 divide-x border-b border-border bg-card sm:grid-cols-4">
@@ -1445,12 +1442,13 @@ export default function ProjectsPage() {
             </div>
             <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
               {filtered.slice(0, 6).map((item) => (
-                <Link key={item.id} href={`/projects/${item.id}?tab=Project%20Sheet`} className="group rounded-xl border border-border/80 bg-background p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
-                  <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}18` }}><Layers className="h-4 w-4" style={{ color: item.color }} /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold group-hover:text-primary">{item.name}</span><span className="block truncate text-[11px] text-muted-foreground">{item.client} · {item.category}</span></span></div><span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{item.status}</span></div>
+                <Link key={item.id} href={`/projects/${item.id}?tab=Project%20Sheet`} className="group relative rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-white hover:shadow-md">
+                  <span className="absolute inset-x-4 top-0 h-1 rounded-b-full" style={{ backgroundColor: item.color }} />
+                  <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}18` }}><Layers className="h-4 w-4" style={{ color: item.color }} /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold group-hover:text-primary">{item.name}</span><span className="block truncate text-[11px] text-muted-foreground">{item.client} · {item.category}</span></span></div><span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold ring-1 ring-slate-200">{item.status}</span></div>
                   <div className="mt-4 flex items-center justify-between text-xs"><span className="font-medium text-muted-foreground">Tiến độ thực hiện</span><span className="font-mono font-bold">{item.progress}%</span></div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div>
                   <div className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-muted/40 py-2.5 text-[11px]"><div className="px-2"><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div className="px-2"><div className="text-muted-foreground">Plan hour</div><div className="mt-1 font-mono font-semibold text-blue-700">{Math.max(8, item.tasks.total * 8).toLocaleString('vi-VN')}h</div></div><div className="px-2"><div className="text-muted-foreground">Đến hạn</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 text-[11px]"><span className="text-muted-foreground">{item.members.length} thành viên</span><div className="flex items-center gap-2"><ProjectMemberAvatarStack members={item.members} limit={4} /><ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" /></div></div>
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-[11px]"><span className="truncate pr-2 text-muted-foreground">{item.members.length} thành viên · {item.members.slice(0, 2).map((member) => member.name || member.initials).join(", ")}{item.members.length > 2 ? "…" : ""}</span><div className="flex shrink-0 items-center gap-2"><ProjectMemberAvatarStack members={item.members} limit={4} /><ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" /></div></div>
                 </Link>
               ))}
             </div>
@@ -1465,7 +1463,7 @@ export default function ProjectsPage() {
           </div>
 
           {/* Filters */}
-          <div className="relative flex min-h-[560px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm" data-testid="projects-stable-shell">
+          <div className="relative flex min-h-[520px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)]" data-testid="projects-stable-shell">
             <div className="flex min-h-[4.25rem] shrink-0 flex-col items-stretch gap-3 border-b border-border px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:px-4 xl:flex-nowrap" data-testid="projects-control-bar">
               <div className="flex min-w-0 items-center gap-2.5 flex-1 bg-background border border-input rounded-xl px-3.5 py-2">
                 <Search className="w-4 h-4 text-muted-foreground shrink-0" />

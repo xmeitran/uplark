@@ -1366,7 +1366,7 @@ export default function ProjectsPage() {
 
   return (
     <AppShell activeRoute="/projects" onCreateProjectClick={() => setIsCreateOpen(true)} title="Projects">
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 xl:p-6">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 xl:p-6">
           {/* Page Header */}
           <div className="mb-4 flex shrink-0 flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center">
             <div>
@@ -1418,14 +1418,17 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          {/* Portfolio overview belongs to All Projects, not an individual project sheet. */}
-          <section className="mb-4 shrink-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:mb-5 sm:p-5">
+          {/* Cross-project Project Sheet overview. This is additive; the All Projects result set stays below. */}
+          <section className="mb-4 shrink-0 rounded-xl border border-blue-200/80 bg-card p-4 shadow-sm sm:mb-5 sm:p-5" data-testid="project-sheet-overview">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Portfolio dự án</h2>
-                <p className="mt-1 text-xs text-muted-foreground">Tổng quan nhanh các dự án trong workspace. Chọn một thẻ để mở Project Sheet tương ứng.</p>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">Project Sheet</span>
+                  <h2 className="text-lg font-bold text-foreground">Tổng quan theo project</h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">So sánh tiến độ, task, ngân sách và giờ Plan · Logwork · P&amp;L trước khi mở chi tiết từng project.</p>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">{filtered.length} project trong bộ lọc hiện tại</span>
+              <span className="text-xs font-semibold text-muted-foreground">{filtered.length} project theo bộ lọc hiện tại</span>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {filtered.slice(0, 6).map((item) => (
@@ -1434,11 +1437,12 @@ export default function ProjectsPage() {
                   <div className="mt-1 text-xs text-muted-foreground">{item.client} · {item.category}</div>
                   <div className="mt-3 flex items-center justify-between text-xs"><span className="text-muted-foreground">Tiến độ</span><span className="font-mono font-semibold">{item.progress}%</span></div>
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]"><div><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div><div className="text-muted-foreground">Budget</div><div className="mt-1 font-mono font-semibold"><MoneyAmount value={item.budget} /></div></div><div><div className="text-muted-foreground">Due</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:grid-cols-4"><div><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div><div className="text-muted-foreground">Budget</div><div className="mt-1 truncate font-mono font-semibold"><MoneyAmount value={item.budget} /></div></div><div><div className="text-muted-foreground">Plan hour</div><div className="mt-1 font-mono font-semibold text-blue-700">{Math.max(8, item.tasks.total * 8).toLocaleString('vi-VN')}h</div></div><div><div className="text-muted-foreground">Due</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
+                  <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-[11px]"><span className="text-muted-foreground">Members</span><ProjectMemberAvatarStack members={item.members} limit={4} /></div>
                 </Link>
               ))}
             </div>
-            {filtered.length > 6 && <p className="mt-3 text-xs text-muted-foreground">Đang hiển thị 6 dự án đầu tiên · dùng bảng bên dưới để xem toàn bộ {filtered.length} dự án.</p>}
+            {filtered.length > 6 && <p className="mt-3 text-xs text-muted-foreground">Đang hiển thị 6 project đầu tiên · dùng khu vực <span className="font-semibold text-foreground">All Projects</span> bên dưới để xem toàn bộ {filtered.length} project.</p>}
           </section>
 
           <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs sm:mb-5">
@@ -1449,7 +1453,7 @@ export default function ProjectsPage() {
           </div>
 
           {/* Filters */}
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm" data-testid="projects-stable-shell">
+          <div className="relative flex min-h-[560px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm" data-testid="projects-stable-shell">
             <div className="flex min-h-[4.25rem] shrink-0 flex-col items-stretch gap-3 border-b border-border px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:px-4 xl:flex-nowrap" data-testid="projects-control-bar">
               <div className="flex min-w-0 items-center gap-2.5 flex-1 bg-background border border-input rounded-xl px-3.5 py-2">
                 <Search className="w-4 h-4 text-muted-foreground shrink-0" />

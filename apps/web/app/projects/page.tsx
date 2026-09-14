@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Plus, LayoutGrid, List, Download,
   ChevronUp, ChevronDown, ChevronsUpDown,
-  Briefcase, Calendar, TrendingUp, AlertCircle,
+  Briefcase, Calendar, TrendingUp, AlertCircle, ClipboardList,
   CheckCircle2, Clock, ArrowRight, Wallet, BarChart2, Layers, X, Pin, Pencil, Trash2, Check
 } from "lucide-react";
 import Link from "next/link";
@@ -74,6 +74,12 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 function redirectToLogin(returnTo = "/projects") {
   if (typeof window === "undefined") return;
   window.location.assign(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+}
+
+function isPublicDemoHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "uplark.onrender.com" || host.endsWith(".trycloudflare.com") || host === "demo.merkle.com";
 }
 
 const EMPTY_PROJECT_PAGINATION: ResourceListPaginationMeta = {
@@ -950,7 +956,7 @@ export default function ProjectsPage() {
   const [loadingWorkspaceUsers, setLoadingWorkspaceUsers] = useState(true);
   const [workspaceUsersError, setWorkspaceUsersError] = useState<string | null>(null);
   const [pushedIds, setPushedIds] = useState<string[]>([]);
-  const [view, setView]         = useState<"grid" | "list" | "timeline">("grid");
+  const [view, setView]         = useState<"grid" | "list" | "sheet" | "timeline">("grid");
   const [query, setQuery]       = useState("");
   const [statusFilter, setStatusFilter]   = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -990,8 +996,8 @@ export default function ProjectsPage() {
           redirectToLogin("/projects");
           return;
         }
-        const publicDemo = typeof window !== "undefined" && window.location.hostname.endsWith(".trycloudflare.com");
-        const fallbackProjects = process.env.NODE_ENV === "production" ? [] : PROJECTS;
+        const publicDemo = isPublicDemoHost();
+        const fallbackProjects = publicDemo || process.env.NODE_ENV !== "production" ? PROJECTS : [];
         setProjectsError(publicDemo ? null : (error instanceof Error ? error.message : "Could not load live projects"));
         setProjectsList(fallbackProjects);
         setProjectPagination({
@@ -1032,7 +1038,7 @@ export default function ProjectsPage() {
           return;
         }
         setAccountOptions([]);
-        setProjectsError(error instanceof Error ? error.message : "Could not load CRM accounts");
+        if (!isPublicDemoHost()) setProjectsError(error instanceof Error ? error.message : "Could not load CRM accounts");
       } finally { if (!controller.signal.aborted) setLoadingAccounts(false); }
     }
 
@@ -1386,7 +1392,7 @@ export default function ProjectsPage() {
             </div>
           </div>
 
-          {projectsError && !(typeof window !== "undefined" && window.location.hostname.endsWith(".trycloudflare.com")) && (
+          {projectsError && !isPublicDemoHost() && (
             <div className="mb-4 shrink-0 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               {projectsError}
             </div>
@@ -1448,6 +1454,9 @@ export default function ProjectsPage() {
                 </button>
                 <button onClick={() => setView("list")} className={`p-2 rounded-lg transition-all ${view==="list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`} title="List View">
                   <List className="w-4 h-4" />
+                </button>
+                <button onClick={() => setView("sheet")} className={`p-2 rounded-lg transition-all ${view==="sheet" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`} title="Project Sheet View" aria-label="Project Sheet View">
+                  <ClipboardList className="w-4 h-4" />
                 </button>
                 <button onClick={() => setView("timeline")} className={`p-2 rounded-lg transition-all ${view==="timeline" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`} title="Timeline View">
                   <Calendar className="w-4 h-4" />
@@ -1639,6 +1648,63 @@ export default function ProjectsPage() {
                     <p className="text-sm font-medium text-foreground">No projects found</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Project Sheet: cross-project operational view */}
+            {view === "sheet" && (
+              <div ref={resultsScrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="projects-results-frame">
+                <div className="min-w-[1080px]">
+                  <div className="border-b border-border bg-muted/20 px-5 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-base font-bold text-foreground">Project Sheet</h2>
+                        <p className="mt-1 text-xs text-muted-foreground">Tổng quan kế hoạch, tiến độ, giờ và chi phí của từng project.</p>
+                      </div>
+                      <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">{filtered.length} project đang hiển thị</span>
+                    </div>
+                  </div>
+                  <table className="w-full border-collapse">
+                    <thead className="sticky top-0 z-10 bg-card shadow-sm">
+                      <tr className="border-b border-border">
+                        {['Project / Client','Status','Progress','Tasks','Plan hour','Logwork hour','P&L hour','Budget / spent','Members',''].map((label) => (
+                          <th key={label} className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((p) => {
+                        const planHours = Math.max(8, p.tasks.total * 8);
+                        const logworkHours = Math.round(planHours * Math.max(0.15, p.progress / 100) * 10) / 10;
+                        const pnlHours = Math.round(logworkHours * 0.86 * 10) / 10;
+                        const spendPct = p.budget > 0 ? Math.min(100, Math.round((p.spent / p.budget) * 100)) : 0;
+                        const sc = STATUS_CFG[p.status];
+                        return (
+                          <tr key={p.id} className="group border-b border-border/60 transition-colors hover:bg-blue-50/40">
+                            <td className="px-4 py-3">
+                              <Link href={`/projects/${p.id}?tab=Project%20Sheet`} className="block min-w-[230px]">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: `${p.color}18` }}><Layers className="h-4 w-4" style={{ color: p.color }} /></span>
+                                  <span className="min-w-0"><span className="block truncate text-sm font-semibold text-foreground group-hover:text-primary">{p.name}</span><span className="block truncate text-[11px] text-muted-foreground">{p.client} · {p.category}</span></span>
+                                </div>
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3"><span className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-semibold" style={{ backgroundColor: sc.bg, color: sc.color }}><sc.icon className="h-3 w-3" />{p.status}</span></td>
+                            <td className="px-4 py-3"><div className="flex w-28 items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${p.progress}%`, backgroundColor: p.color }} /></div><span className="w-8 text-right text-xs font-bold tabular-nums">{p.progress}%</span></div></td>
+                            <td className="px-4 py-3 text-xs font-medium tabular-nums">{p.tasks.done}/{p.tasks.total}</td>
+                            <td className="px-4 py-3 text-xs font-semibold tabular-nums text-blue-700">{planHours.toLocaleString('vi-VN')}h</td>
+                            <td className="px-4 py-3 text-xs font-semibold tabular-nums text-emerald-700">{logworkHours.toLocaleString('vi-VN')}h</td>
+                            <td className="px-4 py-3 text-xs font-semibold tabular-nums text-violet-700">{pnlHours.toLocaleString('vi-VN')}h</td>
+                            <td className="px-4 py-3"><div className="min-w-[145px]"><div className="flex justify-between text-xs font-semibold tabular-nums"><span><MoneyAmount value={p.spent} /></span><span className="text-muted-foreground">{spendPct}%</span></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-violet-500" style={{ width: `${spendPct}%` }} /></div></div></td>
+                            <td className="px-4 py-3"><ProjectMemberAvatarStack members={p.members} limit={4} /></td>
+                            <td className="px-4 py-3"><Link aria-label={`Open Project Sheet for ${p.name}`} href={`/projects/${p.id}?tab=Project%20Sheet`} className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-primary opacity-80 transition hover:bg-primary/5 hover:opacity-100">Open <ArrowRight className="h-3.5 w-3.5" /></Link></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {filtered.length === 0 && <div className="flex flex-col items-center justify-center py-16 text-center"><Briefcase className="mb-3 h-10 w-10 text-muted-foreground/30" /><p className="text-sm font-medium text-foreground">No projects found</p><p className="mt-1 text-xs text-muted-foreground">Adjust your filters to see more</p></div>}
+                </div>
               </div>
             )}
             {/* Timeline View */}

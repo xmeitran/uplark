@@ -260,16 +260,21 @@ export function MonthlyTimesheet({
                         <Td>
                           <div className="flex flex-wrap gap-1">
                             {projectsForPerson.length > 0 ? projectsForPerson.map((item) => (
-                              <span key={`${row.person.id}-${item.code}`} className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-700">
+                              <span key={`${row.person.id}-${item.code}`} className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold ${item.status === "on_hold" ? "bg-amber-50 text-amber-700" : item.status === "insufficient" ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700"}`}>
                                 {item.code}
                               </span>
                             )) : <span className="text-muted-foreground">—</span>}
                           </div>
                         </Td>
                         <Td align="center">
-                          <Pill tone={overallStatus === "active" ? "success" : overallStatus === "on_hold" ? "warning" : "neutral"}>
-                            {PARTICIPATION_STATUS_LABELS[overallStatus]}
-                          </Pill>
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {Array.from(new Set(projectsForPerson.map((item) => item.status))).map((status) => (
+                              <Pill key={`${row.person.id}-${status}`} tone={status === "active" ? "success" : status === "on_hold" ? "warning" : "neutral"}>
+                                {PARTICIPATION_STATUS_LABELS[status]}
+                              </Pill>
+                            ))}
+                            {projectsForPerson.length === 0 ? <Pill tone="neutral">{PARTICIPATION_STATUS_LABELS[overallStatus]}</Pill> : null}
+                          </div>
                         </Td>
                         <Td align="center">
                           <Pill tone={qualityTone(row.quality)}>

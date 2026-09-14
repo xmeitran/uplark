@@ -212,6 +212,9 @@ const PROJECT_SEEDS: ProjectSeed[] = [
     workGroup: "customer_project",
     picIndex: 0,
     memberIndexes: [0, 1, 2, 4, 8],
+    // Keep a mixed EV-035 state visible in the first monthly page: the lead
+    // is paused on this project while still active on other assignments.
+    onHoldMemberIndexes: [0],
     deadline: "2026-08-15",
     estimateBias: 1,
     effortBias: 0.92,

@@ -10,6 +10,7 @@ import {
   Search,
   UserRoundCog,
 } from "lucide-react";
+import { EvTrace } from "./ev-trace";
 
 const PEOPLE = [
   {
@@ -188,6 +189,7 @@ export function HrProfileWorkbench() {
     <AppShell activeRoute="/people" title="Hồ sơ nhân sự">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-[1480px] space-y-5">
+          <EvTrace ev="EV-006" title="Hồ sơ nhân sự / Chi phí nguồn lực" scope="User ID, Level, Cost Rate và ngày hiệu lực phục vụ Timesheet/P&L" />
           <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold text-primary">

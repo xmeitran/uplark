@@ -38,6 +38,7 @@ import {
 } from "@/lib/workspace-users";
 import { downloadCsv } from "@/lib/csv-export";
 import { uiProjectDateToIso } from "@/lib/project-date";
+import { EvTrace } from "@/components/pilot/ev-trace";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1367,6 +1368,7 @@ export default function ProjectsPage() {
   return (
     <AppShell activeRoute="/projects" onCreateProjectClick={() => setIsCreateOpen(true)} title="Projects">
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3 sm:p-4 xl:p-6">
+          <EvTrace ev="EV-012" title="All Projects / Project View" scope="Tổng hợp project, trạng thái, tiến độ và điều hướng Project Sheet" />
           {/* Page Header */}
           <div className="mb-4 flex shrink-0 flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-center">
             <div>

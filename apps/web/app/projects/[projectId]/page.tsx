@@ -58,6 +58,7 @@ import {
   CustomDatePicker,
 } from "@/components/constructor-x/custom-controls";
 import { ModalLayer } from "@/components/modal-layer";
+import { EvTrace } from "@/components/pilot/ev-trace";
 import { useAuth } from "@/lib/auth";
 import { PROJECTS, type Project } from "../data";
 import {
@@ -8858,6 +8859,7 @@ export default function ProjectDetailPage() {
           ref={projectMainRef}
           className="flex-1 overflow-auto [overflow-anchor:none]"
         >
+          <div className="px-6 pt-4"><EvTrace ev="EV-011 · EV-012 · EV-033 · EV-035 · EV-036 · EV-046 · EV-047" title="Project Detail / Project Sheet" scope="Project Team, Project View, Timesheet, cảnh báo, quản trị vấn đề và nghiệm thu" /></div>
           {projectPeople.loading && (
             <p role="status" className="px-6 pt-4 text-sm">
               Loading project members…

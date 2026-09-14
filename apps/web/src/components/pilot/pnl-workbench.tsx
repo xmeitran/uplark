@@ -16,6 +16,7 @@ import {
   Search,
   WalletCards,
 } from "lucide-react";
+import { EvTrace } from "./ev-trace";
 
 type Project = {
   code: string;
@@ -242,6 +243,7 @@ export function PnlWorkbench() {
     <AppShell activeRoute="/pnl" title="Project P&L">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-[1480px] space-y-5">
+          <EvTrace ev="EV-007" title="Project P&L" scope="Plan · Logwork · P&L Hour, Worklog Daily, chi phí và đối soát ngoại lệ" />
           <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold text-primary">

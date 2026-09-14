@@ -23,6 +23,7 @@ import { MockDataNotice, Pill } from "./timesheet-ui";
 import { MonthlyTimesheet } from "./monthly-timesheet";
 import { ProjectTimesheet } from "./project-timesheet";
 import { DailyWeeklyTimesheet } from "./daily-weekly-timesheet";
+import { EvTrace } from "@/components/pilot/ev-trace";
 
 /**
  * /timesheet workbench — the shell that owns filters, permission scope and the
@@ -251,6 +252,7 @@ export function TimesheetWorkbench() {
 
   return (
     <div className="space-y-4">
+      <EvTrace ev="EV-018 · EV-028 · EV-029 · EV-059 · EV-060" title="Timesheet" scope="Ghi giờ, phân loại Task Type, truy vết theo nhân sự và xuất dữ liệu" />
       {noticeVisible ? (
         <MockDataNotice onDismiss={() => setNoticeVisible(false)} />
       ) : null}

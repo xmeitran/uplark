@@ -68,6 +68,15 @@ export const MEMBER_STATE_LABELS: Record<MemberState, string> = {
   released: "Đã rời"
 };
 
+/** EV-035: derived participation state for the selected reporting period. */
+export type ParticipationStatus = "active" | "on_hold" | "insufficient";
+
+export const PARTICIPATION_STATUS_LABELS: Record<ParticipationStatus, string> = {
+  active: "Active",
+  on_hold: "On Hold",
+  insufficient: "Thiếu dữ liệu",
+};
+
 export type ApprovalStatus = "draft" | "submitted" | "approved" | "rejected";
 
 export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {

@@ -28,11 +28,11 @@ import {
   WORK_GROUP_COLORS
 } from "./timesheet-format";
 import {
-  MEMBER_STATE_LABELS,
+  PARTICIPATION_STATUS_LABELS,
   NODE_STATUS_LABELS,
   PROJECT_STATUS_LABELS,
   WORK_GROUP_LABELS,
-  type MemberState,
+  type ParticipationStatus,
   type NodeStatus,
   type ProjectStatus,
   type TimeLog,
@@ -355,8 +355,13 @@ export function ProjectTimesheet({
           <SectionCard
             id="pts-members"
             title={`Nhân sự tham gia — ${selected.project.code}`}
-            description="Trạng thái tham gia, công việc đang mở và giờ ghi nhận trong kỳ."
+            description="EV-035: trạng thái được suy ra từ Project Status và Time Log của đúng kỳ đang lọc."
           >
+            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <span><strong className="text-emerald-700">Active</strong> = có Time Log thực tế trong kỳ</span>
+              <span><strong className="text-amber-700">On Hold</strong> = Project đang On Hold</span>
+              <span><strong className="text-slate-600">Thiếu dữ liệu</strong> = chưa đủ căn cứ, không suy ra khả năng nhận việc</span>
+            </div>
             <ProjectMemberTable dataset={dataset} projectId={selected.project.id} logs={logs} onOpenLogs={setDrawerRequest} />
           </SectionCard>
         </>
@@ -681,6 +686,7 @@ function ProjectMemberTable({
           <col className="w-[22%]" />
           <col className="w-[15%]" />
           <col className="w-[14%]" />
+          <col className="w-[18%]" />
           <col className="w-[11%]" />
           <col className="w-[11%]" />
           <col className="w-[11%]" />
@@ -691,7 +697,8 @@ function ProjectMemberTable({
           <tr>
             <Th>Nhân sự</Th>
             <Th>Vai trò</Th>
-            <Th align="center">Trạng thái tham gia</Th>
+            <Th align="center">Trạng thái EV-035</Th>
+            <Th>Các Project Active</Th>
             <Th>Tham gia từ</Th>
             <Th align="right">Việc đang mở</Th>
             <Th align="right">Giờ trong kỳ</Th>
@@ -710,9 +717,19 @@ function ProjectMemberTable({
               </Td>
               <Td className="text-muted-foreground">{row.role}</Td>
               <Td align="center">
-                <Pill tone={row.state === "active" ? "success" : row.state === "on_hold" ? "warning" : "neutral"}>
-                  {MEMBER_STATE_LABELS[row.state as MemberState] ?? row.state}
-                </Pill>
+                <span title={row.statusReason}>
+                  <Pill tone={row.status === "active" ? "success" : row.status === "on_hold" ? "warning" : "neutral"}>
+                    {PARTICIPATION_STATUS_LABELS[row.status as ParticipationStatus]}
+                  </Pill>
+                </span>
+                <span className="mt-1 block text-[10px] leading-tight text-muted-foreground">{row.statusReason}</span>
+              </Td>
+              <Td>
+                {row.activeProjects.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {row.activeProjects.map((candidate) => <span key={candidate.id} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700" title={candidate.name}>{candidate.code}</span>)}
+                  </div>
+                ) : <span className="text-[11px] text-muted-foreground">Không có Project Active</span>}
               </Td>
               <Td className="whitespace-nowrap tabular-nums text-muted-foreground">{formatDate(row.joinedAt)}</Td>
               <Td align="right" className="font-mono tabular-nums text-muted-foreground">{row.openTaskCount}</Td>

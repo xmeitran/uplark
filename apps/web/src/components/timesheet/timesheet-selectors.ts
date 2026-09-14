@@ -22,10 +22,12 @@ import {
 import type {
   ApprovalStatus,
   MemberState,
+  ParticipationStatus,
   MilestoneNode,
   NodeStatus,
   Person,
   ProjectNode,
+  ProjectStatus,
   StageNode,
   TaskNode,
   TimeLog,
@@ -1000,6 +1002,11 @@ export interface ProjectSummaryRow {
   risk: "ok" | "watch" | "over";
 }
 
+/** Project statuses that still represent an active delivery context. */
+export function isProjectActiveStatus(status: ProjectStatus): boolean {
+  return status === "discovery" || status === "onboarding" || status === "in_progress" || status === "acceptance";
+}
+
 export function buildProjectSummaries(
   dataset: TimesheetDataset,
   logs: TimeLog[],
@@ -1048,11 +1055,11 @@ export function buildProjectSummaries(
             task.dueDate < today,
         ).length,
         milestoneCount: project.milestones.length,
-        activeMemberCount: project.members.filter(
-          (member) => member.state === "active",
+        activeMemberCount: buildProjectMemberRows(project, dataset, logs).filter(
+          (member) => member.status === "active",
         ).length,
-        onHoldMemberCount: project.members.filter(
-          (member) => member.state === "on_hold",
+        onHoldMemberCount: buildProjectMemberRows(project, dataset, logs).filter(
+          (member) => member.status === "on_hold",
         ).length,
         loggingMemberCount: peopleByProject.get(project.id)?.size ?? 0,
         deadline: project.deadline,
@@ -1164,6 +1171,10 @@ export interface ProjectMemberRow {
   person: Person;
   role: string;
   state: MemberState;
+  /** EV-035 derived status; raw membership state is retained for auditability. */
+  status: ParticipationStatus;
+  statusReason: string;
+  activeProjects: Array<{ id: string; code: string; name: string }>;
   joinedAt: string;
   actualMinutes: number;
   openTaskCount: number;
@@ -1189,10 +1200,30 @@ export function buildProjectMemberRows(
       (log) => log.personId === member.personId,
     );
     const dates = memberLogs.map((log) => log.date).sort();
+    const missingRequiredData = !project.status || !project.picId || project.milestones.length === 0 ||
+      project.milestones.some((milestone) => !milestone.startDate || !milestone.dueDate);
+    const status: ParticipationStatus = project.status === "paused"
+      ? "on_hold"
+      : missingRequiredData
+        ? "insufficient"
+        : memberLogs.length > 0
+          ? "active"
+          : "insufficient";
+    const statusReason = status === "on_hold"
+      ? "Project đang On Hold; cần rà soát task đang mở"
+      : status === "active"
+        ? "Có Time Log thực tế trong kỳ theo dõi"
+        : "Chưa đủ Project Status, Task/PIC, Timeline hoặc Time Log để kết luận";
+    const activeProjects = dataset.projects
+      .filter((candidate) => candidate.members.some((candidateMember) => candidateMember.personId === member.personId) && isProjectActiveStatus(candidate.status))
+      .map((candidate) => ({ id: candidate.id, code: candidate.code, name: candidate.name }));
     rows.push({
       person,
       role: member.role,
       state: member.state,
+      status,
+      statusReason,
+      activeProjects,
       joinedAt: member.joinedAt,
       actualMinutes: sum(memberLogs.map((log) => log.minutes)),
       openTaskCount: tasks.filter(

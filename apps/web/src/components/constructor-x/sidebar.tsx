@@ -87,7 +87,11 @@ const NAV_BOTTOM = [
   { icon: Moon, label: "Night Mode", href: "#", isToggle: true },
 ];
 
-const visibleNavItems = NAV_ITEMS.filter((item) => isLocalNavigationVisibleRoute(item.href.split("?")[0]));
+const PILOT_NAV_ROUTES = new Set(["/projects", "/timesheet", "/people", "/pnl"]);
+const visibleNavItems = NAV_ITEMS.filter((item) => {
+  const route = item.href.split("?")[0];
+  return PILOT_NAV_ROUTES.has(route) || isLocalNavigationVisibleRoute(route);
+});
 const visibleMoreItems = NAV_MORE.filter((item) => isLocalNavigationVisibleRoute(item.href));
 const visibleBottomItems = NAV_BOTTOM.filter((item) => item.isToggle || isLocalNavigationVisibleRoute(item.href));
 const PROJECT_SUB = [

@@ -638,6 +638,12 @@ function buildLogs(people: Person[], projects: ProjectNode[], random: () => numb
 
     for (const iso of days) {
       if (!isWorkingDay(iso, HOLIDAYS)) continue;
+      // Keep one intentional EV-035 edge case visible in the demo: Hoàng Bảo
+      // Ngọc is assigned to PRJ-027 but has no Time Log in the selected period,
+      // so the UI correctly derives "Thiếu dữ liệu" instead of guessing Active.
+      if (person.name === "Hoàng Bảo Ngọc" && projects.some((project) => project.code === "PRJ-027" && project.members.some((member) => member.personId === person.id))) {
+        continue;
+      }
       if (random() > seed.discipline) continue;
 
       const entryCount = randomInt(random, 1, 3);

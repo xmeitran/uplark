@@ -245,6 +245,22 @@ export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string
     () => LOGWORK_DATES.map((date) => ({ date, hours: dailyLogwork.filter((entry) => entry.date === date).reduce((sum, entry) => sum + entry.hours, 0) })),
     [dailyLogwork],
   );
+  const deliveryDxPeople = useMemo(
+    () => LOGWORK_PEOPLE.filter((person) => person.role === "Delivery" || person.role === "Engineering"),
+    [],
+  );
+  const deliveryDxBreakdown = useMemo(
+    () => deliveryDxPeople.map((person) => {
+      const logwork = dailyLogwork.filter((entry) => entry.name === person.name).reduce((sum, entry) => sum + entry.hours, 0);
+      return {
+        ...person,
+        plan: project.plan * person.weight,
+        logwork,
+        pnl: logwork * (project.logwork ? project.pnl / project.logwork : 0),
+      };
+    }),
+    [dailyLogwork, deliveryDxPeople, project.logwork, project.pnl, project.plan],
+  );
   return (
     <AppShell activeRoute="/pnl" title="Project P&L">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -469,7 +485,10 @@ export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string
                 {EXPENSES.map((label, index) => (
                   <div
                     key={label}
-                    className="rounded-lg border border-border p-3"
+                    className={`rounded-lg border border-border p-3 ${label === "Delivery / DX" ? "cursor-pointer transition hover:border-amber-300 hover:bg-amber-50/40" : ""}`}
+                    onClick={() => label === "Delivery / DX" && router.push(`/pnl/${project.code}`)}
+                    role={label === "Delivery / DX" ? "button" : undefined}
+                    tabIndex={label === "Delivery / DX" ? 0 : undefined}
                   >
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold">{label}</span>
@@ -744,6 +763,24 @@ export function PnlWorkbench({ detailProjectCode }: { detailProjectCode?: string
                       </tbody>
                     </table>
                   </div>
+                </section>
+                <section className="overflow-hidden rounded-xl border border-amber-200 bg-amber-50/30">
+                  <div className="border-b border-amber-200 px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div><h3 className="text-sm font-bold">Delivery / DX · phân bổ theo nhân sự</h3><p className="mt-1 text-[11px] text-muted-foreground">Đối soát 3 lớp giờ cho từng thành viên thuộc nhóm Delivery / DX.</p></div>
+                      <Status tone="warning">{deliveryDxPeople.length} nhân sự</Status>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left text-xs">
+                      <thead className="bg-amber-50/60 text-[10px] uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-3">Nhân sự / vai trò</th><th className="px-3 py-3 text-right">Plan Hour</th><th className="px-3 py-3 text-right">Logwork Hour</th><th className="px-3 py-3 text-right">P&amp;L Hour</th>{LOGWORK_DATES.slice(0, 10).map((date) => <th key={date} className="px-2 py-3 text-right">{date.slice(0, 5)}</th>)}</tr></thead>
+                      <tbody className="divide-y divide-amber-100">
+                        {deliveryDxBreakdown.map((person) => <tr key={person.name} className="hover:bg-amber-50/60"><td className="px-4 py-3"><div className="font-semibold">{person.name}</div><div className="text-[10px] text-muted-foreground">{person.role}</div></td><td className="px-3 py-3 text-right font-mono">{person.plan.toFixed(1)}h</td><td className="px-3 py-3 text-right font-mono font-semibold text-emerald-700">{person.logwork.toFixed(1)}h</td><td className="px-3 py-3 text-right font-mono font-semibold text-violet-700">{person.pnl.toFixed(1)}h</td>{LOGWORK_DATES.slice(0, 10).map((date) => { const entry = dailyLogwork.find((item) => item.name === person.name && item.date === date); return <td key={date} className="px-2 py-3 text-right font-mono text-slate-700">{entry?.hours.toFixed(1)}h</td>; })}</tr>)}
+                        <tr className="bg-amber-50/70 font-bold"><td className="px-4 py-3">Tổng Delivery / DX</td><td className="px-3 py-3 text-right font-mono">{deliveryDxBreakdown.reduce((sum, person) => sum + person.plan, 0).toFixed(1)}h</td><td className="px-3 py-3 text-right font-mono text-emerald-700">{deliveryDxBreakdown.reduce((sum, person) => sum + person.logwork, 0).toFixed(1)}h</td><td className="px-3 py-3 text-right font-mono text-violet-700">{deliveryDxBreakdown.reduce((sum, person) => sum + person.pnl, 0).toFixed(1)}h</td>{LOGWORK_DATES.slice(0, 10).map((date) => <td key={date} className="px-2 py-3 text-right font-mono">{dailyLogwork.filter((item) => item.date === date && deliveryDxPeople.some((person) => person.name === item.name)).reduce((sum, item) => sum + item.hours, 0).toFixed(1)}h</td>)}</tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="border-t border-amber-200 px-4 py-3 text-[10px] text-muted-foreground">Bảng hiển thị 10 ngày đầu; ma trận Logwork Daily phía trên chứa toàn bộ ngày trong kỳ.</p>
                 </section>
                 {project.pending > 0 ? <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><h3 className="text-sm font-bold text-amber-900">Danh sách chờ xử lý</h3><p className="mt-1 text-xs leading-relaxed text-amber-800">{project.pending}h Logwork chưa được đưa vào P&amp;L Hour. Cần kiểm tra trạng thái duyệt, mapping project và Cost Rate hiệu lực trước khi chốt kỳ.</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra approval</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra Cost Rate</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Ghi audit reason</span></div></div></div></section> : null}
                 <div className="grid gap-4 md:grid-cols-2">

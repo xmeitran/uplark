@@ -1419,7 +1419,7 @@ export default function ProjectsPage() {
           </div>
 
           {/* Cross-project Project Sheet overview. This is additive; the All Projects result set stays below. */}
-          <section className="mb-4 shrink-0 rounded-xl border border-blue-200/80 bg-card p-4 shadow-sm sm:mb-5 sm:p-5" data-testid="project-sheet-overview">
+          <section className="order-last mb-4 shrink-0 rounded-xl border border-blue-200/80 bg-card p-4 shadow-sm sm:mb-5 sm:p-5" data-testid="project-sheet-overview">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">

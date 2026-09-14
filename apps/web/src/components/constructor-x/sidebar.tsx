@@ -61,6 +61,7 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Briefcase, label: "Projects", href: "/projects", badge: null },
+  { icon: FileText, label: "Project Sheet", href: "/projects/p8?tab=Project%20Sheet", badge: null },
   { icon: StickyNote, label: "Notes", href: "/notes" },
   { icon: FolderOpen, label: "Files", href: "/files" },
   { icon: MessagesSquare, label: "Chats", href: "/chats", badge: 3 },

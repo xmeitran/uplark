@@ -76,6 +76,29 @@ const EXPENSES = [
   "Khác",
 ];
 const expenseShare = [0.08, 0.18, 0.54, 0.08, 0.07, 0.05];
+const LOGWORK_PEOPLE = [
+  { name: "An Nguyễn", role: "Project Manager", weight: 0.22 },
+  { name: "Phạm Minh Quân", role: "Delivery", weight: 0.2 },
+  { name: "Bùi Thanh", role: "Delivery", weight: 0.18 },
+  { name: "Đỗ Phương", role: "Business Analyst", weight: 0.14 },
+  { name: "Lê Hoàng", role: "Engineering", weight: 0.14 },
+  { name: "Nguyễn Linh", role: "QA / UAT", weight: 0.12 },
+];
+const LOGWORK_DATES = ["01/09/2026", "02/09/2026", "03/09/2026", "04/09/2026"];
+
+function buildDailyLogwork(totalHours: number) {
+  return LOGWORK_PEOPLE.flatMap((person, personIndex) => {
+    const personTotal = totalHours * person.weight;
+    const dailyWeights = [0.2, 0.25, 0.25, 0.3];
+    return LOGWORK_DATES.map((date, dayIndex) => ({
+      ...person,
+      date,
+      hours: Number((personTotal * dailyWeights[dayIndex]).toFixed(1)),
+      id: `${person.name}-${date}`,
+      color: ["#2563eb", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#0891b2"][personIndex],
+    }));
+  });
+}
 
 function Status({
   children,
@@ -203,6 +226,14 @@ export function PnlWorkbench() {
   const revenueConfirmed = project.revenue > 0;
   const ebit = revenueConfirmed ? project.revenue - project.expenses : null;
   const margin = revenueConfirmed && ebit !== null ? (ebit / project.revenue) * 100 : null;
+  const dailyLogwork = useMemo(() => buildDailyLogwork(project.logwork), [project.logwork]);
+  const dailyLogworkTotals = useMemo(
+    () => LOGWORK_PEOPLE.map((person) => ({
+      ...person,
+      total: dailyLogwork.filter((entry) => entry.name === person.name).reduce((sum, entry) => sum + entry.hours, 0),
+    })),
+    [dailyLogwork],
+  );
   return (
     <AppShell activeRoute="/pnl" title="Project P&L">
       <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
@@ -660,6 +691,23 @@ export function PnlWorkbench() {
                     tone="amber"
                   />
                 </div>
+                <section className="mt-5 overflow-hidden rounded-xl border border-border">
+                  <div className="flex flex-col gap-1 border-b border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold">Logwork Daily theo nhân sự</h3>
+                      <p className="mt-1 text-[11px] text-muted-foreground">Giờ thực tế đã ghi nhận trong kỳ · mỗi dòng là một người và một ngày.</p>
+                    </div>
+                    <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">Tổng {project.logwork.toLocaleString("vi-VN")}h</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[620px] text-left text-xs">
+                      <thead className="bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-2.5">Nhân sự</th><th className="px-3 py-2.5">Vai trò</th><th className="px-3 py-2.5">Ngày ghi nhận</th><th className="px-3 py-2.5 text-right">Giờ trong ngày</th><th className="px-4 py-2.5 text-right">Tổng người</th></tr></thead>
+                      <tbody className="divide-y divide-border">
+                        {dailyLogwork.map((entry, index) => <tr key={entry.id} className="hover:bg-muted/20"><td className="px-4 py-2.5"><div className="flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: entry.color }}>{entry.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><span className="font-semibold">{entry.name}</span></div></td><td className="px-3 py-2.5 text-muted-foreground">{entry.role}</td><td className="px-3 py-2.5 font-mono">{entry.date}</td><td className="px-3 py-2.5 text-right font-mono font-semibold">{entry.hours.toFixed(1)}h</td><td className="px-4 py-2.5 text-right font-mono font-semibold">{index % LOGWORK_DATES.length === LOGWORK_DATES.length - 1 ? `${dailyLogworkTotals.find((person) => person.name === entry.name)?.total.toFixed(1)}h` : "—"}</td></tr>)}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <section className="rounded-xl border border-border p-4">
                     <h3 className="text-sm font-bold">Đối soát giờ</h3>

@@ -199,6 +199,8 @@ interface ProjectSeed {
   effortBias: number;
   /** Deliberate data holes so PTS-05 has something to flag. */
   gaps?: { missingEstimates?: boolean; missingDeadline?: boolean; missingOwners?: boolean };
+  /** Explicit EV-035 demo states; keeps On Hold visible and reproducible. */
+  onHoldMemberIndexes?: number[];
 }
 
 const PROJECT_SEEDS: ProjectSeed[] = [
@@ -230,6 +232,7 @@ const PROJECT_SEEDS: ProjectSeed[] = [
     deadline: "2026-09-30",
     estimateBias: 1.15,
     effortBias: 0.42,
+    onHoldMemberIndexes: [11],
     milestones: [
       { name: "M1 — Khảo sát chính sách lương", stages: ["Phỏng vấn HR", "Chuẩn hoá công thức"] },
       { name: "M2 — Cấu hình hệ thống", stages: ["Bảng lương", "Bảo hiểm & thuế", "Phiếu lương"] },
@@ -563,7 +566,9 @@ function buildProjects(
 
     const members = seed.memberIndexes.map((personIndex, order) => {
       const state: MemberState =
-        seed.status === "completed"
+        seed.onHoldMemberIndexes?.includes(personIndex)
+          ? "on_hold"
+          : seed.status === "completed"
           ? order === 0
             ? "active"
             : "released"

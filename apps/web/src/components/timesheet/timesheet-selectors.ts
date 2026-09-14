@@ -1202,7 +1202,7 @@ export function buildProjectMemberRows(
     const dates = memberLogs.map((log) => log.date).sort();
     const missingRequiredData = !project.status || !project.picId || project.milestones.length === 0 ||
       project.milestones.some((milestone) => !milestone.startDate || !milestone.dueDate);
-    const status: ParticipationStatus = project.status === "paused"
+    const status: ParticipationStatus = member.state === "on_hold" || project.status === "paused"
       ? "on_hold"
       : missingRequiredData
         ? "insufficient"
@@ -1210,7 +1210,9 @@ export function buildProjectMemberRows(
           ? "active"
           : "insufficient";
     const statusReason = status === "on_hold"
-      ? "Project đang On Hold; cần rà soát task đang mở"
+      ? member.state === "on_hold"
+        ? "Nhân sự đang On Hold trong phân công project; cần rà soát task đang mở"
+        : "Project đang On Hold; cần rà soát task đang mở"
       : status === "active"
         ? "Có Time Log thực tế trong kỳ theo dõi"
         : "Chưa đủ Project Status, Task/PIC, Timeline hoặc Time Log để kết luận";

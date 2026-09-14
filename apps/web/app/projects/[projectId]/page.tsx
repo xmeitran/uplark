@@ -6996,6 +6996,7 @@ export default function ProjectDetailPage() {
   const [sheetStatus, setSheetStatus] = useState("All");
   const [sheetOwner, setSheetOwner] = useState("All");
   const [selectedSheetTask, setSelectedSheetTask] = useState<string | null>(null);
+  const [portfolioStatus, setPortfolioStatus] = useState("All");
   const [hoursMilestoneFilter, setHoursMilestoneFilter] =
     useState<string>("All");
   const [hoursStageFilter, setHoursStageFilter] = useState<string>("All");
@@ -8576,6 +8577,7 @@ export default function ProjectDetailPage() {
       done,
     };
   }).filter((item) => item.tasks.length > 0);
+  const portfolioProjects = PROJECTS.filter((item) => portfolioStatus === "All" || item.status === portfolioStatus);
 
   // Filtered tasks for performance calculations
   const filteredTasks = allTasks.filter((task) => {
@@ -9215,6 +9217,12 @@ export default function ProjectDetailPage() {
                       <button type="button" onClick={() => handleTabChange("Team")} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"><Users className="h-4 w-4" /> Xem thành viên</button>
                     </div>
                   </div>
+
+                  <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h3 className="text-lg font-bold">Portfolio dự án</h3><p className="mt-1 text-sm text-muted-foreground">Tổng quan nhanh các dự án trong workspace. Chọn một thẻ để mở Project Sheet tương ứng.</p></div><select value={portfolioStatus} onChange={(event) => setPortfolioStatus(event.target.value)} className="h-9 rounded-lg border border-border bg-background px-3 text-sm"><option value="All">Tất cả trạng thái</option><option value="Active">Active</option><option value="In Review">In Review</option><option value="Planning">Planning</option><option value="On Hold">On Hold</option><option value="Completed">Completed</option><option value="At Risk">At Risk</option></select></div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{portfolioProjects.slice(0, 6).map((item) => <button key={item.id} type="button" onClick={() => taskDetailRouter.push(`/projects/${item.id}?tab=Project%20Sheet`)} className={`rounded-xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-sm ${item.id === projectId ? "border-primary/40 bg-primary/[0.04]" : "border-border/80 bg-background"}`}><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} /><span className="truncate font-semibold">{item.name}</span></div><span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold">{item.status}</span></div><div className="mt-1 text-xs text-muted-foreground">{item.client} · {item.category}</div><div className="mt-3 flex items-center justify-between text-xs"><span className="text-muted-foreground">Tiến độ</span><span className="font-mono font-semibold">{item.progress}%</span></div><div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div><div className="mt-3 grid grid-cols-3 gap-2 text-[11px]"><div><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div><div className="text-muted-foreground">Budget</div><div className="mt-1 font-mono font-semibold">{item.budget.toLocaleString("vi-VN")} ₫</div></div><div><div className="text-muted-foreground">Due</div><div className="mt-1 font-semibold">{item.dueDate}</div></div></div></button>)}</div>
+                    {portfolioProjects.length > 6 && <p className="mt-3 text-xs text-muted-foreground">Đang hiển thị 6 dự án đầu tiên · mở mục Projects để xem toàn bộ {portfolioProjects.length} dự án.</p>}
+                  </section>
 
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     {[{label:"Tiến độ",value:`${project.progress}%`,icon:TrendingUp,color:C.success},{label:"Task hoàn tất",value:`${doneTasks}/${allTasks.length}`,icon:ListChecks,color:C.blue},{label:"Plan hour",value:`${projectPlanHours.toFixed(1)}h`,icon:Calendar,color:C.blue},{label:"Actual hour",value:`${projectActualHours.toFixed(1)}h`,icon:Clock,color:C.purple},{label:"Variance",value:`${(projectActualHours-projectPlanHours).toFixed(1)}h`,icon:BarChart2,color:projectActualHours>projectPlanHours?C.danger:C.success},{label:"Cảnh báo",value:`${riskRegistry.length}`,icon:AlertCircle,color:riskRegistry.length?C.warning:C.success}].map((item) => <div key={item.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="flex items-center justify-between"><span className="text-xs font-semibold text-muted-foreground">{item.label}</span><span className="rounded-lg p-2" style={{backgroundColor:`${item.color}16`}}><item.icon className="h-4 w-4" style={{color:item.color}} /></span></div><div className="mt-3 text-2xl font-extrabold tracking-tight">{item.value}</div></div>)}

@@ -1420,48 +1420,6 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          {/* Cross-project Project Sheet overview. Additive to the All Projects result set. */}
-          <section className="mb-4 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)] sm:mb-5" data-testid="project-sheet-overview">
-            <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight text-foreground">Project Sheet overview</h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Tổng quan nhanh theo project. Chọn một project để mở Project Sheet chi tiết.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">{filtered.length} project</span>
-                <button type="button" onClick={() => setView("sheet")} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">Mở bảng đối soát</button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 divide-x border-b border-border bg-card sm:grid-cols-4">
-              {[
-                { label: "Đang thực hiện", value: active, tone: "text-emerald-600" },
-                { label: "Có rủi ro", value: atRisk, tone: "text-red-600" },
-                { label: "Tổng task", value: filtered.reduce((sum, p) => sum + p.tasks.total, 0).toLocaleString("vi-VN"), tone: "text-foreground" },
-                { label: "Đã hoàn thành", value: filtered.filter((p) => p.progress >= 100).length, tone: "text-violet-600" }
-              ].map((stat) => <div key={stat.label} className="px-4 py-3 sm:px-5"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</p><p className={`mt-1 text-xl font-bold tabular-nums ${stat.tone}`}>{stat.value}</p></div>)}
-            </div>
-            <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
-              {filtered.slice(0, 6).map((item) => (
-                <Link key={item.id} href={`/projects/${item.id}?tab=Project%20Sheet`} className="group relative rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-left transition hover:-translate-y-0.5 hover:border-primary/50 hover:bg-white hover:shadow-md">
-                  <span className="absolute inset-x-4 top-0 h-1 rounded-b-full" style={{ backgroundColor: item.color }} />
-                  <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${item.color}18` }}><Layers className="h-4 w-4" style={{ color: item.color }} /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold group-hover:text-primary">{item.name}</span><span className="block truncate text-[11px] text-muted-foreground">{item.client} · {item.category}</span></span></div><span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-semibold ring-1 ring-slate-200">{item.status}</span></div>
-                  <div className="mt-4 flex items-center justify-between text-xs"><span className="font-medium text-muted-foreground">Tiến độ thực hiện</span><span className="font-mono font-bold">{item.progress}%</span></div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, backgroundColor: item.color }} /></div>
-                  <div className="mt-4 grid grid-cols-3 divide-x rounded-lg bg-muted/40 py-2.5 text-[11px]"><div className="px-2"><div className="text-muted-foreground">Task</div><div className="mt-1 font-mono font-semibold">{item.tasks.done}/{item.tasks.total}</div></div><div className="px-2"><div className="text-muted-foreground">Plan hour</div><div className="mt-1 font-mono font-semibold text-blue-700">{Math.max(8, item.tasks.total * 8).toLocaleString('vi-VN')}h</div></div><div className="px-2"><div className="text-muted-foreground">Đến hạn</div><div className="mt-1 truncate font-semibold">{item.dueDate}</div></div></div>
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-[11px]"><span className="truncate pr-2 text-muted-foreground">{item.members.length} thành viên · {item.members.slice(0, 2).map((member) => member.name || member.initials).join(", ")}{item.members.length > 2 ? "…" : ""}</span><div className="flex shrink-0 items-center gap-2"><ProjectMemberAvatarStack members={item.members} limit={4} /><ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" /></div></div>
-                </Link>
-              ))}
-            </div>
-            {filtered.length > 6 && <p className="mt-3 text-xs text-muted-foreground">Đang hiển thị 6 project đầu tiên · dùng khu vực <span className="font-semibold text-foreground">All Projects</span> bên dưới để xem toàn bộ {filtered.length} project.</p>}
-          </section>
-
-          <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs sm:mb-5">
-            <span className="mr-1 font-semibold text-blue-900">Pilot vận hành:</span>
-            <Link href="/timesheet" className="rounded-lg bg-white px-3 py-1.5 font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100">Timesheet theo Project</Link>
-            <Link href="/pnl" className="rounded-lg bg-white px-3 py-1.5 font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100">Project P&amp;L</Link>
-            <span className="text-[11px] text-blue-700/70">Theo dõi giờ kế hoạch, logwork, P&amp;L và ngoại lệ từ cùng workspace.</span>
-          </div>
-
           {/* Filters */}
           <div className="relative flex min-h-[520px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)]" data-testid="projects-stable-shell">
             <div className="flex min-h-[4.25rem] shrink-0 flex-col items-stretch gap-3 border-b border-border px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:px-4 xl:flex-nowrap" data-testid="projects-control-bar">

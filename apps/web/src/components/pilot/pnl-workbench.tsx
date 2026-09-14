@@ -712,18 +712,24 @@ export function PnlWorkbench() {
                   </div>
                 </section>
                 <section className="overflow-hidden rounded-xl border border-border">
-                  <div className="flex flex-col gap-1 border-b border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold">Logwork Daily theo nhân sự</h3>
-                      <p className="mt-1 text-[11px] text-muted-foreground">Giờ thực tế đã ghi nhận trong kỳ · mỗi dòng là một người và một ngày.</p>
+                  <div className="border-b border-border bg-muted/30 px-4 py-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2"><h3 className="text-sm font-bold">Logwork Daily · ma trận theo người và ngày</h3><Status tone="info">EV-007</Status></div>
+                        <p className="mt-1 text-[11px] text-muted-foreground">Mỗi ô là số giờ thực tế đã ghi nhận. Tổng người và tổng ngày dùng để đối soát với Logwork Hour ở trên.</p>
+                      </div>
+                      <div className="flex items-center gap-2"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-slate-600">{LOGWORK_PEOPLE.length} nhân sự</span><span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">Tổng {project.logwork.toLocaleString("vi-VN")}h</span></div>
                     </div>
-                    <span className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">Tổng {project.logwork.toLocaleString("vi-VN")}h</span>
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {dailyTotals.map((item) => <div key={item.date} className="rounded-lg border border-border bg-card px-3 py-2"><div className="text-[10px] text-muted-foreground">{item.date}</div><div className="mt-1 flex items-end justify-between gap-2"><strong className="font-mono text-base">{item.hours.toFixed(1)}h</strong><span className="text-[10px] text-muted-foreground">{Math.round((item.hours / Math.max(1, project.logwork)) * 100)}%</span></div><div className="mt-1.5 h-1 rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (item.hours / Math.max(...dailyTotals.map((day) => day.hours), 1)) * 100)}%` }} /></div></div>)}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full min-w-[620px] text-left text-xs">
-                      <thead className="bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-2.5">Nhân sự</th><th className="px-3 py-2.5">Vai trò</th><th className="px-3 py-2.5">Ngày ghi nhận</th><th className="px-3 py-2.5 text-right">Giờ trong ngày</th><th className="px-4 py-2.5 text-right">Tổng người</th></tr></thead>
+                    <table className="w-full min-w-[820px] text-left text-xs">
+                      <thead className="bg-muted/20 text-[10px] uppercase tracking-wide text-muted-foreground"><tr><th className="sticky left-0 z-[1] bg-muted/20 px-4 py-3">Nhân sự / vai trò</th>{LOGWORK_DATES.map((date) => <th key={date} className="px-3 py-3 text-right">{date}</th>)}<th className="px-4 py-3 text-right">Tổng người</th></tr></thead>
                       <tbody className="divide-y divide-border">
-                        {dailyLogwork.map((entry, index) => <tr key={entry.id} className="hover:bg-muted/20"><td className="px-4 py-2.5"><div className="flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: entry.color }}>{entry.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><span className="font-semibold">{entry.name}</span></div></td><td className="px-3 py-2.5 text-muted-foreground">{entry.role}</td><td className="px-3 py-2.5 font-mono">{entry.date}</td><td className="px-3 py-2.5 text-right font-mono font-semibold">{entry.hours.toFixed(1)}h</td><td className="px-4 py-2.5 text-right font-mono font-semibold">{index % LOGWORK_DATES.length === LOGWORK_DATES.length - 1 ? `${dailyLogworkTotals.find((person) => person.name === entry.name)?.total.toFixed(1)}h` : "—"}</td></tr>)}
+                        {dailyLogworkTotals.map((person) => <tr key={person.name} className="hover:bg-muted/20"><td className="sticky left-0 bg-card px-4 py-3"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: dailyLogwork.find((entry) => entry.name === person.name)?.color }}>{person.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><div className="font-semibold">{person.name}</div><div className="text-[10px] text-muted-foreground">{person.role}</div></div></div></td>{LOGWORK_DATES.map((date) => { const entry = dailyLogwork.find((item) => item.name === person.name && item.date === date); return <td key={date} className="px-3 py-3 text-right"><span className={`inline-flex min-w-[48px] justify-center rounded-md px-2 py-1 font-mono font-semibold ${entry && entry.hours > 9 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>{entry?.hours.toFixed(1)}h</span></td>; })}<td className="px-4 py-3 text-right font-mono font-bold">{person.total.toFixed(1)}h</td></tr>)}
+                        <tr className="bg-muted/30 font-bold"><td className="px-4 py-3">Tổng theo ngày</td>{dailyTotals.map((item) => <td key={item.date} className="px-3 py-3 text-right font-mono">{item.hours.toFixed(1)}h</td>)}<td className="px-4 py-3 text-right font-mono text-emerald-700">{dailyTotals.reduce((sum, item) => sum + item.hours, 0).toFixed(1)}h</td></tr>
                       </tbody>
                     </table>
                   </div>

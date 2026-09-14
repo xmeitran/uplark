@@ -241,10 +241,10 @@ export function PnlWorkbench() {
           <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold text-primary">
-                FINANCE · PROJECT CONTROL
+                FINANCE · PROJECT CONTROL · PNL-01
               </p>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight">
-                Project P&amp;L
+                Project P&amp;L — tổng quan & đối soát
               </h1>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -348,7 +348,8 @@ export function PnlWorkbench() {
           </section>
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-4 py-3">
-              <h2 className="text-sm font-bold">Đối soát theo project</h2>
+              <h2 className="text-sm font-bold">PNL-01 · Đối soát theo project</h2>
+              <p className="mt-1 text-[11px] text-muted-foreground">Plan ≠ Logwork ≠ P&amp;L. Chọn một dòng để mở toàn bộ chi tiết theo người và ngày.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left text-xs">
@@ -448,7 +449,7 @@ export function PnlWorkbench() {
           </section>
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="border-b border-border px-4 py-3">
-              <h2 className="text-sm font-bold">Expenses theo 6 nhóm</h2>
+              <h2 className="text-sm font-bold">Expenses theo 6 nhóm · PNL-01</h2>
             </div>
             {showExpenses ? (
               <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -485,7 +486,7 @@ export function PnlWorkbench() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                    Project được chọn
+                    PNL-01 · Project được chọn
                   </p>
                   <h2 className="mt-1 text-lg font-bold">{project.name}</h2>
                 </div>
@@ -551,7 +552,7 @@ export function PnlWorkbench() {
               </div>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <h2 className="text-sm font-bold">Kết quả P&amp;L</h2>
+              <h2 className="text-sm font-bold">Kết quả P&amp;L theo kỳ</h2>
               <dl className="mt-4 divide-y divide-border text-xs">
                 <div className="flex justify-between py-3">
                   <dt className="text-muted-foreground">Revenue chưa VAT</dt>
@@ -650,7 +651,7 @@ export function PnlWorkbench() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                      Chi tiết P&amp;L
+                      PNL-01 · Chi tiết đối soát P&amp;L
                     </p>
                     <h2 className="mt-1 text-xl font-bold">{project.name}</h2>
                   </div>
@@ -662,7 +663,12 @@ export function PnlWorkbench() {
                     Đóng
                   </button>
                 </div>
-                <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <span className="rounded-md bg-blue-50 px-2 py-1 font-semibold text-blue-700">Kỳ báo cáo: {period}</span>
+                  <span className="rounded-md bg-slate-100 px-2 py-1">Client: {project.client}</span>
+                  <Status tone={project.pending ? "warning" : "success"}>{project.pending ? "Tạm tính · còn giờ chờ" : "Đủ điều kiện tính"}</Status>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                   <KPI
                     label="Plan Hour"
                     value={`${project.plan}h`}
@@ -691,6 +697,11 @@ export function PnlWorkbench() {
                     tone="amber"
                   />
                 </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3"><span className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">Chênh lệch Plan → Logwork</span><strong className="mt-1 block font-mono text-lg text-blue-900">{(project.logwork - project.plan).toLocaleString("vi-VN")}h</strong><span className="text-[10px] text-blue-800/70">Actual so với baseline</span></div>
+                  <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3"><span className="text-[10px] font-semibold uppercase tracking-wide text-violet-700">Tỷ lệ P&amp;L hợp lệ</span><strong className="mt-1 block font-mono text-lg text-violet-900">{Math.round((project.pnl / Math.max(1, project.logwork)) * 100)}%</strong><span className="text-[10px] text-violet-800/70">P&amp;L Hour / Logwork Hour</span></div>
+                  <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3"><span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Cần xử lý</span><strong className="mt-1 block font-mono text-lg text-amber-900">{project.pending}h</strong><span className="text-[10px] text-amber-800/70">Thiếu duyệt hoặc Cost Rate hiệu lực</span></div>
+                </div>
                 <section className="mt-5 overflow-hidden rounded-xl border border-border">
                   <div className="flex flex-col gap-1 border-b border-border bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -708,6 +719,7 @@ export function PnlWorkbench() {
                     </table>
                   </div>
                 </section>
+                {project.pending > 0 ? <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" /><div><h3 className="text-sm font-bold text-amber-900">Danh sách chờ xử lý</h3><p className="mt-1 text-xs leading-relaxed text-amber-800">{project.pending}h Logwork chưa được đưa vào P&amp;L Hour. Cần kiểm tra trạng thái duyệt, mapping project và Cost Rate hiệu lực trước khi chốt kỳ.</p><div className="mt-3 flex flex-wrap gap-2"><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra approval</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Kiểm tra Cost Rate</span><span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-amber-800">Ghi audit reason</span></div></div></div></section> : null}
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <section className="rounded-xl border border-border p-4">
                     <h3 className="text-sm font-bold">Đối soát giờ</h3>

@@ -184,7 +184,7 @@ export function ProjectTimesheet({
       {/* ── Project overview table ─────────────────────────────────────── */}
       <SectionCard
         id="pts-overview"
-        title="Tổng quan giờ theo dự án"
+        title="EV-033 · Tổng quan giờ theo dự án"
         description="Bấm một dòng để mở chi tiết milestone, giai đoạn, công việc và nhân sự tham gia."
         actions={<span className="text-[11px] text-muted-foreground">{summaries.length} dự án</span>}
       >
@@ -358,8 +358,8 @@ export function ProjectTimesheet({
 
           <SectionCard
             id="pts-members"
-            title={`Nhân sự tham gia — ${selected.project.code}`}
-            description="EV-035: trạng thái được suy ra từ Project Status và Time Log của đúng kỳ đang lọc."
+            title={`EV-035 · Nhân sự tham gia — ${selected.project.code}`}
+            description="Trạng thái được suy ra từ Project Status và Time Log của đúng kỳ đang lọc."
           >
             <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
               <span><strong className="text-emerald-700">Active</strong> = có Time Log thực tế trong kỳ</span>
@@ -510,13 +510,13 @@ export function ProjectTimesheet({
 
 function AdminProgressAlerts({ summary }: { summary: ProjectSummaryRow }) {
   const alerts = [
-    summary.consumptionPercent > 100 ? { label: "Vượt Estimate Hour", detail: `Actual ${formatHours(summary.actualMinutes)} cao hơn Estimate ${formatHours(summary.estimateMinutes)} (${formatSignedHours(summary.varianceMinutes)}).`, basis: "Actual Hour − Estimate Hour", tone: "danger" as const } : null,
-    summary.overdueTaskCount > 0 ? { label: "Chậm tiến độ", detail: `${summary.overdueTaskCount} task chưa hoàn thành đã quá Deadline.`, basis: "Task status + Deadline", tone: "danger" as const } : null,
-    summary.blockedTaskCount > 0 ? { label: "Đang chờ xử lý", detail: `${summary.blockedTaskCount} task đang ở trạng thái Đang chờ; cần rà soát blocker/yếu tố phụ thuộc.`, basis: "Task status = Đang chờ", tone: "warning" as const } : null,
-    summary.deadline === null || summary.estimateCoveragePercent < 80 ? { label: "Thiếu dữ liệu — chưa đủ căn cứ", detail: `${summary.deadline === null ? "Chưa có Deadline dự án. " : ""}${summary.estimateCoveragePercent < 80 ? `Mới có ${formatPercent(summary.estimateCoveragePercent)} task có Estimate Hour.` : ""}`, basis: "Deadline + Estimate coverage", tone: "warning" as const } : null
-  ].filter(Boolean) as Array<{ label: string; detail: string; basis: string; tone: "danger" | "warning" }>;
-  return <SectionCard id="pts-admin-alerts" title="Cảnh báo chậm tiến độ & giờ thực hiện" description="Admin view: cảnh báo được truy nguyên từ Estimate, Actual, Deadline và trạng thái Task." actions={<Pill tone={alerts.length ? "warning" : "success"}>{alerts.length ? `${alerts.length} cảnh báo đang hoạt động` : "Không có cảnh báo"}</Pill>}>
-    {alerts.length === 0 ? <EmptyState message="Project đang trong ngưỡng theo dữ liệu hiện có." /> : <div className="grid gap-2 md:grid-cols-2">{alerts.map((alert) => <div key={alert.label} className={`rounded-lg border px-3 py-2 ${alert.tone === "danger" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"}`}><strong className="text-[12px]">{alert.label}</strong><p className="mt-1 text-[11px] text-muted-foreground">{alert.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">Căn cứ: {alert.basis}</p></div>)}</div>}
+    summary.consumptionPercent > 100 ? { code: "EV-036", label: "Vượt Estimate Hour", detail: `Actual ${formatHours(summary.actualMinutes)} cao hơn Estimate ${formatHours(summary.estimateMinutes)} (${formatSignedHours(summary.varianceMinutes)}).`, basis: "Actual Hour − Estimate Hour", tone: "danger" as const } : null,
+    summary.overdueTaskCount > 0 ? { code: "EV-036", label: "Chậm tiến độ", detail: `${summary.overdueTaskCount} task chưa hoàn thành đã quá Deadline.`, basis: "Task status + Deadline", tone: "danger" as const } : null,
+    summary.blockedTaskCount > 0 ? { code: "EV-036", label: "Đang chờ xử lý", detail: `${summary.blockedTaskCount} task đang ở trạng thái Đang chờ; cần rà soát blocker/yếu tố phụ thuộc.`, basis: "Task status = Đang chờ", tone: "warning" as const } : null,
+    summary.deadline === null || summary.estimateCoveragePercent < 80 ? { code: "EV-036", label: "Thiếu dữ liệu — chưa đủ căn cứ", detail: `${summary.deadline === null ? "Chưa có Deadline dự án. " : ""}${summary.estimateCoveragePercent < 80 ? `Mới có ${formatPercent(summary.estimateCoveragePercent)} task có Estimate Hour.` : ""}`, basis: "Deadline + Estimate coverage", tone: "warning" as const } : null
+  ].filter(Boolean) as Array<{ code: string; label: string; detail: string; basis: string; tone: "danger" | "warning" }>;
+  return <SectionCard id="pts-admin-alerts" title="EV-036 · Cảnh báo chậm tiến độ & giờ thực hiện" description="Admin view: truy nguyên từ Estimate, Actual, Deadline và trạng thái Task." actions={<Pill tone={alerts.length ? "warning" : "success"}>{alerts.length ? `${alerts.length} cảnh báo đang hoạt động` : "Không có cảnh báo"}</Pill>}>
+    {alerts.length === 0 ? <EmptyState message="Project đang trong ngưỡng theo dữ liệu hiện có." /> : <div className="grid gap-2 md:grid-cols-2">{alerts.map((alert, index) => <div key={`${alert.code}-${alert.label}-${index}`} className={`rounded-lg border px-3 py-2 ${alert.tone === "danger" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"}`}><div className="flex items-center justify-between gap-2"><strong className="text-[12px]">{alert.label}</strong><span className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[10px] font-bold text-muted-foreground">{alert.code}</span></div><p className="mt-1 text-[11px] text-muted-foreground">{alert.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">Căn cứ: {alert.basis}</p></div>)}</div>}
     <p className="mt-3 text-[10px] text-muted-foreground">Không kết luận chậm chỉ vì Actual Hour cao; cảnh báo phải có dữ liệu tiến độ đi kèm.</p>
   </SectionCard>;
 }

@@ -34,6 +34,7 @@ import { DailyWeeklyTimesheet } from "./daily-weekly-timesheet";
  */
 
 type TimesheetView = "monthly" | "project" | "daily";
+type TimesheetAudience = "user" | "admin";
 
 const VIEW_TABS: Array<{ id: TimesheetView; label: string; hint: string }> = [
   {
@@ -65,6 +66,7 @@ export function TimesheetWorkbench() {
   const view = (searchParams.get("view") as TimesheetView | null) ?? "monthly";
   const scope =
     (searchParams.get("scope") as ViewerScope | null) ?? "workspace";
+  const audience: TimesheetAudience = searchParams.get("mode") === "admin" ? "admin" : "user";
 
   const filters = useMemo<TimesheetFilters>(
     () => ({
@@ -403,6 +405,16 @@ export function TimesheetWorkbench() {
             ))}
           </div>
         ) : null}
+        {view === "project" ? (
+          <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <span className="text-[11px] font-semibold text-muted-foreground">Chế độ hiển thị</span>
+            <div className="inline-flex rounded-lg border border-border bg-muted/30 p-0.5" role="group" aria-label="Chế độ xem Timesheet">
+              {([['user', 'User view'], ['admin', 'Admin view']] as const).map(([value, label]) => (
+                <button key={value} type="button" onClick={() => commit({ mode: value })} className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${audience === value ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`} aria-pressed={audience === value}>{label}</button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {/* ── Active view ────────────────────────────────────────────────── */}
@@ -417,6 +429,7 @@ export function TimesheetWorkbench() {
           dataset={scopedDataset}
           filters={filters}
           logs={logs}
+          audience={audience}
         />
       ) : (
         <DailyWeeklyTimesheet

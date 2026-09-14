@@ -13,6 +13,7 @@ import {
   buildProjectSummaries,
   sum,
   type ProjectBreakdownNode,
+  type ProjectSummaryRow,
   type TimesheetFilters
 } from "./timesheet-selectors";
 import {
@@ -79,11 +80,13 @@ const READINESS_PAGE_SIZE = 3;
 export function ProjectTimesheet({
   dataset,
   filters,
-  logs
+  logs,
+  audience = "user"
 }: {
   dataset: TimesheetDataset;
   filters: TimesheetFilters;
   logs: TimeLog[];
+  audience?: "user" | "admin";
 }) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [drawerRequest, setDrawerRequest] = useState<LogDrawerRequest | null>(null);
@@ -336,6 +339,7 @@ export function ProjectTimesheet({
       {/* ── Breakdown + members for the selected project ───────────────── */}
       {selected ? (
         <>
+          {audience === "admin" ? <AdminProgressAlerts summary={selected} /> : null}
           <SectionCard
             id="pts-breakdown"
             title={`Chi tiết giờ — ${selected.project.code} ${selected.project.name}`}
@@ -502,6 +506,19 @@ export function ProjectTimesheet({
       <LogDrawer dataset={dataset} request={drawerRequest} onClose={() => setDrawerRequest(null)} />
     </div>
   );
+}
+
+function AdminProgressAlerts({ summary }: { summary: ProjectSummaryRow }) {
+  const alerts = [
+    summary.consumptionPercent > 100 ? { label: "Vượt Estimate Hour", detail: `Actual ${formatHours(summary.actualMinutes)} cao hơn Estimate ${formatHours(summary.estimateMinutes)} (${formatSignedHours(summary.varianceMinutes)}).`, basis: "Actual Hour − Estimate Hour", tone: "danger" as const } : null,
+    summary.overdueTaskCount > 0 ? { label: "Chậm tiến độ", detail: `${summary.overdueTaskCount} task chưa hoàn thành đã quá Deadline.`, basis: "Task status + Deadline", tone: "danger" as const } : null,
+    summary.blockedTaskCount > 0 ? { label: "Đang chờ xử lý", detail: `${summary.blockedTaskCount} task đang ở trạng thái Đang chờ; cần rà soát blocker/yếu tố phụ thuộc.`, basis: "Task status = Đang chờ", tone: "warning" as const } : null,
+    summary.deadline === null || summary.estimateCoveragePercent < 80 ? { label: "Thiếu dữ liệu — chưa đủ căn cứ", detail: `${summary.deadline === null ? "Chưa có Deadline dự án. " : ""}${summary.estimateCoveragePercent < 80 ? `Mới có ${formatPercent(summary.estimateCoveragePercent)} task có Estimate Hour.` : ""}`, basis: "Deadline + Estimate coverage", tone: "warning" as const } : null
+  ].filter(Boolean) as Array<{ label: string; detail: string; basis: string; tone: "danger" | "warning" }>;
+  return <SectionCard id="pts-admin-alerts" title="Cảnh báo chậm tiến độ & giờ thực hiện" description="Admin view: cảnh báo được truy nguyên từ Estimate, Actual, Deadline và trạng thái Task." actions={<Pill tone={alerts.length ? "warning" : "success"}>{alerts.length ? `${alerts.length} cảnh báo đang hoạt động` : "Không có cảnh báo"}</Pill>}>
+    {alerts.length === 0 ? <EmptyState message="Project đang trong ngưỡng theo dữ liệu hiện có." /> : <div className="grid gap-2 md:grid-cols-2">{alerts.map((alert) => <div key={alert.label} className={`rounded-lg border px-3 py-2 ${alert.tone === "danger" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"}`}><strong className="text-[12px]">{alert.label}</strong><p className="mt-1 text-[11px] text-muted-foreground">{alert.detail}</p><p className="mt-1 text-[10px] text-muted-foreground">Căn cứ: {alert.basis}</p></div>)}</div>}
+    <p className="mt-3 text-[10px] text-muted-foreground">Không kết luận chậm chỉ vì Actual Hour cao; cảnh báo phải có dữ liệu tiến độ đi kèm.</p>
+  </SectionCard>;
 }
 
 /* ── Milestone → giai đoạn → công việc breakdown ─────────────────────────── */

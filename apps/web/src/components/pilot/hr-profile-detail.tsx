@@ -14,6 +14,14 @@ export function HrProfileDetail() {
     () => PEOPLE.find((item) => item.id === params?.personId) ?? PEOPLE[0],
     [params?.personId],
   );
+  const managerOptions = useMemo(
+    () => Array.from(new Set([
+      "Không có quản lý trực tiếp",
+      ...PEOPLE.filter((item) => item.id !== person.id).map((item) => item.name),
+      person.manager,
+    ])),
+    [person.id, person.manager],
+  );
   const [form, setForm] = useState({
     level: person.level,
     role: person.role,
@@ -74,7 +82,7 @@ export function HrProfileDetail() {
                   <label className="text-xs font-semibold text-muted-foreground">Phòng ban<input className={inputClass} value={form.department} onChange={(e) => update("department", e.target.value)} /></label>
                   <label className="text-xs font-semibold text-muted-foreground">Level<select className={inputClass} value={form.level} onChange={(e) => update("level", e.target.value)}><option>L1</option><option>L2</option><option>L3</option><option>L4</option><option>L5</option></select></label>
                   <label className="text-xs font-semibold text-muted-foreground">Loại nhân sự<select className={inputClass} value={form.employmentType} onChange={(e) => update("employmentType", e.target.value)}><option>Full-time</option><option>Part-time</option><option>Freelance</option><option>Intern</option></select></label>
-                  <label className="text-xs font-semibold text-muted-foreground">Quản lý trực tiếp<input className={inputClass} value={form.manager} onChange={(e) => update("manager", e.target.value)} /></label>
+                  <label className="text-xs font-semibold text-muted-foreground">Quản lý trực tiếp<select className={inputClass} value={form.manager} onChange={(e) => update("manager", e.target.value)}>{managerOptions.map((manager) => <option key={manager}>{manager}</option>)}</select></label>
                   <label className="text-xs font-semibold text-muted-foreground">Trạng thái<select className={inputClass} value={form.status} onChange={(e) => update("status", e.target.value)}><option>Active</option><option>On leave</option><option>On Hold</option><option>Inactive</option></select></label>
                 </div>
               </section>

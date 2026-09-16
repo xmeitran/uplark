@@ -24,7 +24,6 @@ import { MonthlyTimesheet } from "./monthly-timesheet";
 import { ProjectTimesheet } from "./project-timesheet";
 import { DailyWeeklyTimesheet } from "./daily-weekly-timesheet";
 import { EvTrace } from "@/components/pilot/ev-trace";
-import { OvertimeApprovalPanel } from "./overtime-approval-panel";
 
 /**
  * /timesheet workbench — the shell that owns filters, permission scope and the
@@ -419,13 +418,6 @@ export function TimesheetWorkbench() {
           </div>
         ) : null}
       </section>
-
-      <OvertimeApprovalPanel
-        dataset={scopedDataset}
-        logs={logs}
-        audience={audience}
-        scope={scope}
-      />
 
       {/* ── Active view ────────────────────────────────────────────────── */}
       {view === "monthly" ? (

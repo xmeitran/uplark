@@ -26,6 +26,7 @@ import {
   Building2,
   MessagesSquare,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -71,6 +72,7 @@ const NAV_ITEMS = [
   { icon: Calendar, label: "Calendar", href: "/calendar", badge: null },
   { icon: BarChart3, label: "Phân tích", href: "/analytics" },
   { icon: ClipboardList, label: "Timesheet", href: "/timesheet" },
+  { icon: ShieldCheck, label: "Approval", href: "/approval" },
   { icon: UserRoundCog, label: "Hồ sơ nhân sự", href: "/people" },
   { icon: CircleDollarSign, label: "Project P&L", href: "/pnl" },
   { icon: BookOpen, label: "Knowledge Base", href: "/knowledge" },
@@ -88,7 +90,7 @@ const NAV_BOTTOM = [
   { icon: Moon, label: "Night Mode", href: "#", isToggle: true },
 ];
 
-const PILOT_NAV_ROUTES = new Set(["/projects", "/timesheet", "/people", "/pnl"]);
+const PILOT_NAV_ROUTES = new Set(["/projects", "/timesheet", "/approval", "/people", "/pnl"]);
 const visibleNavItems = NAV_ITEMS.filter((item) => {
   const route = item.href.split("?")[0];
   return PILOT_NAV_ROUTES.has(route) || isLocalNavigationVisibleRoute(route);

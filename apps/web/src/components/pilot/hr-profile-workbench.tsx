@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/constructor-x/app-shell";
 import { CustomDropdown } from "@/components/constructor-x/custom-controls";
 import {
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 import { EvTrace } from "./ev-trace";
 
-const PEOPLE = [
+export const PEOPLE = [
   {
     id: "u-01",
     name: "Trần Văn Minh",
@@ -26,6 +27,11 @@ const PEOPLE = [
     plan: 640,
     actual: 612,
     color: "#2563eb",
+    rateCategory: "Delivery · PM",
+    overtimeHours: 12,
+    employmentType: "Full-time",
+    manager: "Nguyễn Hoàng Long",
+    startDate: "12/03/2024",
   },
   {
     id: "u-02",
@@ -40,6 +46,11 @@ const PEOPLE = [
     plan: 520,
     actual: 486,
     color: "#7c3aed",
+    rateCategory: "Consulting · BA",
+    overtimeHours: 6,
+    employmentType: "Full-time",
+    manager: "Trần Văn Minh",
+    startDate: "08/07/2024",
   },
   {
     id: "u-03",
@@ -54,6 +65,11 @@ const PEOPLE = [
     plan: 480,
     actual: 452,
     color: "#059669",
+    rateCategory: "Engineering · Dev",
+    overtimeHours: 18,
+    employmentType: "Full-time",
+    manager: "Trần Văn Minh",
+    startDate: "15/02/2023",
   },
   {
     id: "u-04",
@@ -68,6 +84,11 @@ const PEOPLE = [
     plan: 360,
     actual: 318,
     color: "#d97706",
+    rateCategory: "Quality · QA",
+    overtimeHours: 4,
+    employmentType: "Full-time",
+    manager: "Lê Ngọc Anh",
+    startDate: "03/11/2024",
   },
   {
     id: "u-05",
@@ -82,9 +103,14 @@ const PEOPLE = [
     plan: 240,
     actual: 180,
     color: "#db2777",
+    rateCategory: "Support · L1",
+    overtimeHours: 0,
+    employmentType: "Part-time",
+    manager: "Hoàng Thu Hà",
+    startDate: "21/08/2025",
   },
 ] as const;
-function Badge({
+export function Badge({
   children,
   tone = "green",
 }: {
@@ -100,7 +126,7 @@ function Badge({
     </span>
   );
 }
-function Avatar({
+export function Avatar({
   person,
   large = false,
 }: {
@@ -431,6 +457,12 @@ export function HrProfileWorkbench() {
                 </span>
                 <span>→</span>
               </button>
+              <Link
+                href={`/people/${selected.id}`}
+                className="mt-2 flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary/90"
+              >
+                Mở trang chi tiết hồ sơ →
+              </Link>
             </aside>
           </div>
           {showHistory ? (
